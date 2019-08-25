@@ -15,9 +15,9 @@ automatically via picasso.load.
 
 from .. import array, util
 from .. import family
-from .. import config
+from .. import configuration
 from . import Survey
-from .galaxy import SDSSMockGalaxy
+from ..galaxy import SDSSMockGalaxy
 
 import struct
 import os
@@ -150,7 +150,7 @@ class SDSSMockSurvey(Survey):
             self._loadable_family_keys[fam] = set(["galaxy"])
             tmp_file = self._file_map[fam][0] #first file in family
             _file_idx = self._files.get_file_idx(self._file_map[fam][0])
-            for this_key in self._files(_file_idx).keys()
+            for this_key in self._files(_file_idx).keys():
                 self._loadable_family_keys[fam].add(this_key)
             self._loadable_family_keys[fam] = list(self._loadable_family_keys[fam])
 
@@ -165,13 +165,13 @@ class SDSSMockSurvey(Survey):
         If fam is None, returns True if the array can be loaded for all families."""
         return name in self.loadable_keys(fam)
 
-     def loadable_keys(self, fam=None):
+    def loadable_keys(self, fam=None):
         if fam is None:
             return self._loadable_keys
         else:
             return self._loadable_family_keys[fam]
 
-        @staticmethod
+    @staticmethod
     def _write(self, filename=None):
         raise RuntimeError("Not implemented")
 
@@ -222,7 +222,7 @@ class SDSSMockSurvey(Survey):
                         tmp_arr.append(SDSSMockGalaxy(self._files[file_idx]))
                     else:
                         #if we do not ask for the galaxy itself, load the "postprocessed" array
-                    tmp_arr.append(self._files[file_idx][array_name].value) 
+                        tmp_arr.append(self._files[file_idx][array_name].value) 
 
                 target_array = self[loading_fam][array_name]
                 assert target_array.size == np.asarray(tmp_arr).size    
@@ -260,7 +260,7 @@ class SDSSMockSurvey(Survey):
             except KeyError:
                 continue
         if representative_dset is None:
-            raise KeyError, "Array is not present in HDF file"
+            raise KeyError("Array is not present in HDF file")
 
 
         assert len(representative_dset.shape) <= 2

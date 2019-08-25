@@ -17,6 +17,7 @@ data in your config.ini.
 
 import sys
 import functools
+from .configuration import config
 
 
 _registry = []

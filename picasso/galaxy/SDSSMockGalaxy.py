@@ -19,7 +19,7 @@ class SDSSMockGalaxy(Galaxy):
 
         super(SDSSMockGalaxy,self).__init__(self._Galaxy_id, *args)
 
-        self._descriptor = "Galaxy_%d"%,self._Galaxy_id
+        self._descriptor = "Galaxy_%d"%self._Galaxy_id
 
         # load properties
 

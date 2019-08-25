@@ -17,7 +17,7 @@ from . import configuration
 
 from .configuration import config
 
-from . import util, filt, array, family, survey
+from . import util, array, family, survey #filt doo we need to implement filters on surveys?
 from .survey import *
 from . import analysis
 
@@ -27,6 +27,8 @@ from . import load, new
 
 
 configuration.configure_physical_scaling()
+print("Picasso's configurations:")
+print(config)
 
 __version__ = '0.1'
 

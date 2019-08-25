@@ -12,7 +12,7 @@ represent different views of an existing :class:`~picasso.snapshot.Survey`.
 from .. import array
 from .. import family
 from .. import util
-from .. import config
+from .. import configuration
 
 import numpy as np
 import gc # garbage collector
@@ -107,7 +107,7 @@ class Survey(object):
         if array_name in self._split_arrays:
             array_name_1D = self._split_arrays[array_name]
         else:
-            array_name_1D = [array_name + "_" + i for i in 's', 'g', 'd']
+            array_name_1D = [array_name + "_" + i for i in ['s', 'g', 'd']]
 
         return array_name_1D
 
@@ -989,8 +989,7 @@ class Survey(object):
             self._create_array(name, ndim=ndim, dtype=dtype, derived=all_derived, shared=shared)
         try:
             for fam in self._family_arrays[name]:
-                try:
-                    self._arrays[name][self._get_family_slice(fam)] = self._family_arrays[name][fam]
+                self._arrays[name][self._get_family_slice(fam)] = self._family_arrays[name][fam]
             del self._family_arrays[name]
             if ndim == 3:
                 for v in self._array_name_ND_to_1D(name):
@@ -1522,9 +1521,8 @@ def new(n_galaxies=0, order=None, **families):
     return x
 
 def _get_survey_classes():
-    from . import illustris, sdss
+    from . import illustris#, sdss
 
-
-    _survey_classes = [illustris.SDSSMockSurvey,sdss.MANGASurvey,sdss.ClassicSurvey]
+    _survey_classes = [illustris.SDSSMockSurvey]#,sdss.MANGASurvey,sdss.ClassicSurvey]
 
     return _survey_classes

@@ -6,10 +6,53 @@ import numpy as np
 # bad move but simplest solution...
 from astropy.cosmology import WMAP7 as cosmo
 
-from sunpy.sunpy__synthetic_image import congrid
-
 # this file contains utility functions used to load data
 
+def congrid(a, newdims, centre=False, minusone=False):
+    ''' Slimmed down version of congrid as originally obtained from:
+        http://wiki.scipy.org/Cookbook/Rebinning
+    '''
+
+    if not a.dtype in [np.float64, np.float32]:
+        a = np.cast[float](a)
+
+    m1 = np.cast[int](minusone)
+    ofs = np.cast[int](centre) * 0.5
+    old = np.array( a.shape )
+    ndims = len( a.shape )
+    if len( newdims ) != ndims:
+        print("[congrid] dimensions error. " \
+              "This routine currently only support " \
+              "rebinning to the same number of dimensions.")
+        return None
+    newdims = np.asarray( newdims, dtype=float )
+    dimlist = []
+
+
+
+    for i in range( ndims ):
+        base = np.arange( newdims[i] )
+        dimlist.append( (old[i] - m1) / (newdims[i] - m1) \
+                            * (base + ofs) - ofs )
+    # specify old dims
+    olddims = [np.arange(i, dtype = np.float) for i in list( a.shape )]
+
+    # first interpolation - for ndims = any
+    mint = scipy.interpolate.interp1d( olddims[-1], a, kind='linear', bounds_error=False, fill_value=0.0 )
+    newa = mint( dimlist[-1] )
+
+    trorder = [ndims - 1] + list(range( ndims - 1))
+    for i in range( ndims - 2, -1, -1 ):
+        newa = newa.transpose( trorder )
+
+        mint = scipy.interpolate.interp1d( olddims[i], newa, kind='linear', bounds_error=False, fill_value=0.0 )
+        newa = mint( dimlist[i] )
+
+    if ndims > 1:
+        # need one more transpose to return to original dimensions
+        newa = newa.transpose( trorder )
+
+    return newa
 
 def open_hdf5(filename, *args, **kwargs):
     # Function for delayed hdf5 file opening, when opend by another process

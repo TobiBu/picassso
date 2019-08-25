@@ -9,6 +9,18 @@ import subprocess
 import shutil
 import sys
 
+ext_modules = []
+libraries=[ ]
+
+if sys.version_info[0:2]==(3,4) :
+    # this fixes the following bug with the python 3.4 build:
+    # http://bugs.python.org/issue21121
+    extra_compile_args.append("-Wno-error=declaration-after-statement")
+
+extra_link_args = []
+
+incdir = numpy.distutils.misc_util.get_numpy_include_dirs()
+
 
 install_requires = [
     'h5py',
@@ -55,7 +67,6 @@ dist = setup(name = 'picasso',
                            'picasso/plot': ['tollerud2008mw']},
 
              ext_modules = ext_modules,
-             cmdclass = cmdclass,
              classifiers = ["Development Status :: 5 - Production/Stable",
                             "Intended Audience :: Developers",
                             "Intended Audience :: Science/Research",

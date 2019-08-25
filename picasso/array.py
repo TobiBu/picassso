@@ -15,8 +15,11 @@ import numpy as np
 import weakref
 import os
 
-from .backcompat import property
-from .backcompat import fractions
+import builtins
+property = builtins.property
+import fractions
+#from .backcompat import property
+#from .backcompat import fractions
 import atexit
 import functools
 
@@ -45,7 +48,7 @@ class SurveyArray(np.ndarray):
     @derived.setter
     def derived(self, value):
         if value:
-            raise ValueError, "Can only unlink an array. Delete an array to force a rederivation if this is the intended effect."
+            raise ValueError("Can only unlink an array. Delete an array to force a rederivation if this is the intended effect.")
         if self.derived:
             self.sim.unlink_array(self.name)
 
@@ -457,7 +460,7 @@ class SurveyArray(np.ndarray):
         if self.sim is not None:
             self.units = self.sim.infer_original_units(new_unit)
         else:
-            raise RuntimeError, "No link to SimSnap"
+            raise RuntimeError("No link to Survey")
 
     def set_default_units(self, quiet=False):
         """Set the units for this array by performing dimensional analysis
@@ -470,7 +473,7 @@ class SurveyArray(np.ndarray):
                 if not quiet:
                     raise
         else:
-            raise RuntimeError, "No link to SimSnap"
+            raise RuntimeError("No link to Survey")
 
     def in_original_units(self):
         """Retun a copy of this array expressed in the units
@@ -491,7 +494,7 @@ class SurveyArray(np.ndarray):
             r.units = new_unit
             return r
         else:
-            raise ValueError, "Units of array unknown"
+            raise ValueError("Units of array unknown")
 
     def convert_units(self, new_unit):
         """Convert units of this array in-place. Note that if
@@ -513,13 +516,13 @@ class SurveyArray(np.ndarray):
 
         in the case of writing out the array 'array' for the gas
         particle family.  See the description of
-        :func:`pynbody.snapshot.SimSnap.write_array` for options.
+        :func:`picasso.snapshot.Survey.write_array` for options.
         """
 
         if self.sim and self.name:
             self.sim.write_array(self.name, fam=self.family, **kwargs)
         else:
-            raise RuntimeError, "No link to SimSnap"
+            raise RuntimeError("No link to Survey")
 
     def __del__(self):
         """Clean up disk if this was made from a named
@@ -544,7 +547,7 @@ def _unit_aware_comparison(ar, other, comparison_op=None):
             if units.is_unit(other) or other.units != ar.units:
                 other = other.in_units(ar.units)
         else:
-            raise units.UnitsException, "One side of a comparison has units and the other side does not"
+            raise units.UnitsException("One side of a comparison has units and the other side does not")
 
     return comparison_op(ar, other)
 
@@ -866,7 +869,7 @@ def _array_factory(dims, dtype, zeros, shared):
 
     if shared and posix_ipc:
         random.seed(os.getpid() * time.time())
-        fname = "pynbody-" + \
+        fname = "picasso-" + \
             ("".join([random.choice('abcdefghijklmnopqrstuvwxyz')
                       for i in xrange(10)]))
         _all_shared_arrays.append(fname)
@@ -891,10 +894,10 @@ def _array_factory(dims, dtype, zeros, shared):
                 os.write(mem.fd, zeros[:remaining])
                 remaining-=len(zeros)
 
-        except OSError, exc :
+        except OSError as exc :
             if not (exc.errno == 45 and os.uname()[0] == "Darwin"):
                 _shared_array_unlink(fname)
-                raise MemoryError, "Unable to create shared memory region"
+                raise MemoryError("Unable to create shared memory region")
 
         # fd, fname = tempfile.mkstemp()
         # ret_ar = np.memmap(os.fdopen(mem.fd), dtype=dtype, shape=dims).view(SurveyArray)
@@ -1009,7 +1012,7 @@ if posix_ipc:
                 assert hasattr(
                     args, '__len__'), "Function must be called from remote_map to use shared arrays"
                 assert args[
-                    0] == '__pynbody_remote_array__', "Function must be called from remote_map to use shared arrays"
+                    0] == '__picasso_remote_array__', "Function must be called from remote_map to use shared arrays"
                 args = _recursive_shared_array_reconstruct(args)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 output = fn(*args[1:], **kwargs)
@@ -1018,7 +1021,7 @@ if posix_ipc:
             except KeyboardInterrupt:
                 signal.signal(signal.SIGINT, signal.SIG_IGN)
                 raise RemoteKeyboardInterrupt()
-        new_fn.__pynbody_remote_array__ = True
+        new_fn.__picasso_remote_array__ = True
 
         return new_fn
 
@@ -1028,13 +1031,13 @@ if posix_ipc:
         correctly. The function *fn* must be wrapped with the *shared_array_remote*
         decorator to interface correctly with this magic."""
 
-        assert getattr(fn, '__pynbody_remote_array__',
+        assert getattr(fn, '__picasso_remote_array__',
                        False), "Function must be wrapped with shared_array_remote to use shared arrays"
         iterables_deconstructed = _recursive_shared_array_deconstruct(
             iterables)
         try:
             results = pool.map(fn, zip(
-                ['__pynbody_remote_array__'] * len(iterables_deconstructed[0]), *iterables_deconstructed))
+                ['__picasso_remote_array__'] * len(iterables_deconstructed[0]), *iterables_deconstructed))
         except RemoteKeyboardInterrupt:
             raise KeyboardInterrupt
         return _recursive_shared_array_reconstruct(results)

@@ -32,7 +32,7 @@ class Galaxy(object):
 
 
 
-from picasso.galaxy.SDSSMock import SDSSMockGalaxy
+from picasso.galaxy.SDSSMockGalaxy import SDSSMockGalaxy
 
 def _get_galaxy_classes():
 
