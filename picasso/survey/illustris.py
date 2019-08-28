@@ -15,7 +15,8 @@ automatically via picasso.load.
 
 from .. import array, util
 from .. import family
-from .. import configuration
+from .. import configuration #do we need this line?
+from ..configuration import config 
 from . import Survey
 from ..galaxy import SDSSMockGalaxy
 
@@ -40,7 +41,7 @@ class MultiFileManager(object) :
             self._filenames = [path]
             self._numfiles = 1
         else:
-            self._filenames = glob.glob(path + "halo_*_camera_?" + _suffix)
+            self._filenames = glob.glob(path + "halo_*_camera_?" + self._suffix)
             self._numfiles = len(self._filenames)
 
     def __iter__(self):
@@ -76,7 +77,7 @@ class SDSSMockSurvey(Survey):
                             family.validation: set(['galaxy', 'mass', 'metals','distance']),
                             None: set(['galaxy'])}
 
-    _readable_hdf5_test_key = "galaxy"
+    _readable_hdf5_test_key = "stars_Masses" #"galaxy"
     _suffix = '_physical_data.h5'
 
     _multifile_manager_class = MultiFileManager
@@ -92,14 +93,14 @@ class SDSSMockSurvey(Survey):
         self._path = path
 
         self.__init_filemanager(path)
-        self.__init_galaxies()  ## fill with content to load all galaxies
+        #self.__init_galaxies()  ## fill with content to load all galaxies
         self.__init_file_map()
         self.__init_family_map()
         self.__init_loadable_keys()
 
         #gal_list = glob.glob(path + "true/halo_*_camera_?" + _suffix)
 
-        self._num_galaxies = len(glob.glob(path + "halo_*_camera_?" + _suffix))
+        self._num_galaxies = len(glob.glob(path + "halo_*_camera_?" + self._suffix))
 
         self._decorate()
 
@@ -278,27 +279,27 @@ class SDSSMockSurvey(Survey):
     def _test_for_hdf5_key(cls, f):
         with h5py.File(f, "r") as h5test:
             test_key = cls._readable_hdf5_test_key
-            if test_key[-1]=="?":
+            #if test_key[-1]=="?":
                 # try all particle numbers in turn
-                for p in range(6):
-                    test_key = test_key[:-1]+str(p)
-                    if test_key in h5test:
-                        return True
-                return False
-            else:
-                return test_key in h5test
+                #for p in range(6):
+                #    test_key = test_key[:-1]+str(p)
+                #    if test_key in h5test:
+                #        return True
+            #    return False
+            #else:
+            return test_key in h5test
 
     @classmethod
     def _can_load(cls, f):
 
-        test = glob.glob(f + "halo_*_camera_?" + _suffix)
+        test = glob.glob(f + "halo_*_camera_?" + cls._suffix)
         if hasattr(h5py, "is_hdf5"):
             if h5py.is_hdf5(test[0]):
-                return cls._test_for_hdf5_key(f)
+                return cls._test_for_hdf5_key(test[0])
             else:
                 return False
         else:
-            if "hdf5" in f:
+            if "hdf5" in test[0] or "h5" in test[0]:
                 warnings.warn(
                     "It looks like you're trying to load HDF5 files, but python's HDF support (h5py module) is missing.", RuntimeWarning)
             return False
@@ -306,17 +307,15 @@ class SDSSMockSurvey(Survey):
 
 @SDSSMockSurvey.decorator
 def do_properties(survey):
-    # do we have any gloabl propertie we wantr to set?
-    raise RuntimeError("Not implemented")
+    # do we have any gloabl propertie we want to set?...
+    #raise RuntimeError("Not implemented")
 
-    #atr = survey._get_hdf_attrs()#
-
-#    # expansion factor could be saved as redshift
-#    try:
-#        sim.properties['a'] = atr['ExpansionFactor']
-#    except KeyError:
-#        sim.properties['a'] = 1. / (1 + atr['Redshift'])#
-#
+    test_file = survey._files[0]
+    # for mock images so far resolution is fixed
+    try:
+        survey.properties['image_res'] = test_file["stars_Masses"].value.shape[0]
+    except KeyError:
+        survey.properties['image_res'] = np.nan
 
 #    # not all omegas need to be specified in the attributes
 #    try:

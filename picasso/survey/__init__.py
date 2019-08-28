@@ -13,6 +13,8 @@ from .. import array
 from .. import family
 from .. import util
 from .. import configuration
+from ..configuration import config
+from .. import surveydict
 
 import numpy as np
 import gc # garbage collector
@@ -74,6 +76,10 @@ class Survey(object):
     _decorator_registry = {}
 
     _loadable_keys_registry = {}
+
+     # The following will be objects common to a SimSnap and all its SubSnaps
+    _inherited = ["lazy_off", "lazy_derive_off", "lazy_load_off",
+        "properties", "_derived_array_names", "_family_derived_array_names"]
 
     _split_arrays = {'mass': ('mass_s', 'mass_g', 'mass_d'),
                      'metals': ('metals_s', 'metals_g')}
@@ -140,8 +146,14 @@ class Survey(object):
 
         self._arrays = {}
         self._num_galaxies = 0
-        
-        self.properties = []
+        self._family_slice = {}
+        self._family_arrays = {}
+        self._derived_array_names = []
+        self._family_derived_array_names = {}
+        for i in family._registry:
+            self._family_derived_array_names[i] = []
+            
+        self.properties = surveydict.SurveyDict({})
 
     ############################################
     # THE BASICS: SIMPLE INFORMATION
@@ -1140,8 +1152,7 @@ class Survey(object):
                 hash = hashlib.md5(index_list.data)
                 self.__inclusion_hash = hash.digest()
             except:
-                logging.warn(
-                    "Encountered a problem while calculating your inclusion hash. %s" % traceback.format_exc())
+                print("Encountered a problem while calculating your inclusion hash. %s" % traceback.format_exc())
             rval = self.__inclusion_hash
         return rval
 
@@ -1459,11 +1470,9 @@ def load(path, *args, **kwargs):
 
     for c in config['survey-class-priority']:
         if c._can_load(path):
-            logger.info("Loading using backend %s" % str(c))
             return c(path, *args, **kwargs)
 
-    raise IOError(
-        "File %r: format not understood or does not exist" % path)
+    raise IOError("File %r: format not understood or does not exist" % path)
 
 def new(n_galaxies=0, order=None, **families):
     """Create a blank Survey, with the specified number of galaxies.
