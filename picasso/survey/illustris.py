@@ -236,12 +236,15 @@ class SDSSMockSurvey(Survey):
                         tmp_arr.append(SDSSMockGalaxy(self._files[_file_idx]))
                     else:
                         #if we do not ask for the galaxy itself, load the "postprocessed" array
-                        tmp_arr.append(self._files[file_idx][array_name].value)     
-                print(tmp_arr)
-                target_array = self[loading_fam][array_name]
-                assert target_array.size == np.asarray(tmp_arr).size        
+                        #tmp_arr.append(self._files[file_idx][array_name].value)     
+                        raise NotImplementedError()
 
-                target_array = tmp_arr
+                target_array = self[loading_fam][array_name]
+                assert target_array.size == np.asarray(tmp_arr).size
+                
+                target_array[:] = tmp_arr
+                print("target_array")
+                print(target_array[:10])
 
 
     def __get_dtype_dims_and_units(self, fam, translated_name):

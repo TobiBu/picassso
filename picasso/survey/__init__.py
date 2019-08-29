@@ -207,9 +207,6 @@ class Survey(object):
     # THE BASICS: GETTING AND SETTING
     ############################################
 
-
-## think again about getter and setter methods... do we need this complicated stuff???
-
     def __getitem__(self, i):
         """Return either a specific array or a subview of this simulation. See
         the class documentation (:class:`Survey`) for more information."""
@@ -229,9 +226,6 @@ class Survey(object):
 
         raise TypeError
 
-
-## need to decide if SimArray should be used or not...
-# I guess numpy arrays should suffice or do we need units?
 
     def __setitem__(self, name, item):
         """Set the contents of an array in this survey"""
@@ -1110,6 +1104,19 @@ class Survey(object):
             self.ancestor._autoconvert_array_unit(result)
 
             write_array[:] = result
+
+#    def _dirty(self, name):
+#        """Declare a given array as changed, so deleting any derived
+#        quantities which depend on it"""#
+
+#        name = self._array_name_1D_to_ND(name) or name#
+
+#        if not self.auto_propagate_off:
+#            for d_ar in self._dependency_tracker.get_dependents(name):
+#                if d_ar in self or self.has_family_key(d_ar):
+#                    if self.is_derived_array(d_ar):
+#                        del self[d_ar]
+#                        self._dirty(d_ar)
 
 
     def is_derived_array(self, name, fam=None):

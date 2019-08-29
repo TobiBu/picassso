@@ -25,12 +25,24 @@ class Galaxy(object):
 
     def __init__(self, galaxy_id):
         
-        self._Galaxy_id = galaxy_id
+        self._galaxy_id = galaxy_id
         self._descriptor = "Galaxy_" + str(galaxy_id)
         self.properties = {}
         self.properties['Galaxy_id'] = galaxy_id
 
 
+    ############################################
+    # THE BASICS: SIMPLE INFORMATION
+    ############################################
+
+    @property
+    def galaxy_id(self):
+        return self._galaxy_id
+
+    def __repr__(self):
+        return "<Galaxy " + self._galaxy_id + ">"
+
+    #We need the basic getitem, setitem, delitem methods, I think
 
 from picasso.galaxy.SDSSMockGalaxy import SDSSMockGalaxy
 

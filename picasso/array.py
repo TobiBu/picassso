@@ -338,8 +338,6 @@ for f in np.ndarray.__lt__, np.ndarray.__le__, np.ndarray.__eq__, \
 
 def _dirty_fn(w):
     def q(a, *y, **kw):
-        if a.survey is not None and a.name is not None:
-            a.survey._dirty(a.name)
 
         if kw != {}:
             return w(a, *y, **kw)
