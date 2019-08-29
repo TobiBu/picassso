@@ -1,22 +1,25 @@
 
 """
-dataset
+survey
 ========
 
-This module implements the  :class:`~picasso.dataset.Survey` class which manages and stores Survey data.
-It also implements the :class:`~picasso.dataset.SubSurvey` class (and relatives) which
-represent different views of an existing :class:`~picasso.snapshot.Survey`.
+This module implements the  :class:`~picasso.survey.Survey` class which manages and stores Survey data.
+It also implements the :class:`~picasso.survey.SubSurvey` class (and relatives) which
+represent different views of an existing :class:`~picasso.survey.Survey`.
 
 """
 
 from .. import array
 from .. import family
 from .. import util
+from .. import filt
 from .. import configuration
 from ..configuration import config
 from .. import surveydict
 
 import numpy as np
+import weakref
+import threading
 import gc # garbage collector
 import re
 
@@ -78,8 +81,8 @@ class Survey(object):
     _loadable_keys_registry = {}
 
      # The following will be objects common to a SimSnap and all its SubSnaps
-    _inherited = ["lazy_off", "lazy_derive_off", "lazy_load_off",
-        "properties", "_derived_array_names", "_family_derived_array_names"]
+    _inherited = ["properties", "immediate_mode"]
+    #["lazy_off", "lazy_derive_off", "lazy_load_off", "_derived_array_names", "_family_derived_array_names"]
 
     _split_arrays = {'mass': ('mass_s', 'mass_g', 'mass_d'),
                      'metals': ('metals_s', 'metals_g')}
@@ -152,7 +155,20 @@ class Survey(object):
         self._family_derived_array_names = {}
         for i in family._registry:
             self._family_derived_array_names[i] = []
-            
+
+        self._immediate_cache_lock = threading.RLock()
+
+        self.immediate_mode = util.ExecutionControl()
+        # use 'with immediate_mode: ' to always return actual numpy arrays, rather
+        # than IndexedSubArrays which point to sub-parts of numpy arrays
+        self.immediate_mode.on_exit = lambda: self._clear_immediate_mode()
+        
+        self._unifamily = None
+        
+        # If True, when new arrays are created they are in shared memory by
+        # default
+        self._shared_arrays = False
+
         self.properties = surveydict.SurveyDict({})
 
     ############################################
@@ -727,7 +743,7 @@ class Survey(object):
             shared = self._shared_arrays
 
         new_array = array._array_factory(dims, dtype, zeros, shared)
-        new_array._sim = weakref.ref(self)
+        new_array._survey = weakref.ref(self)
         new_array._name = array_name
         new_array.family = None
         # new_array.set_default_units(quiet=True)

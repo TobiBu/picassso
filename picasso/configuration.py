@@ -50,7 +50,7 @@ def configure_directories():
     config['pvt_file'] = pvt_file
     config['dm_file'] = dm_file
  
-    config['families'] = {'train':"t, tr",'prediction':"p, pred, predict","validation":"val, v, valid"}
+    config['families'] = {'training':"train, t, tr",'prediction':"p, pred, predict","validation":"val, v, valid"}
 
     config['survey-class-priority'] = ['SDSSMockSurvey']#,'ClassicSurvey','MANGASurvey']
 

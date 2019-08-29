@@ -25,10 +25,10 @@ class Galaxy(object):
 
     def __init__(self, galaxy_id):
         
-        self._Galaxy_id = Galaxy_id
-        self._descriptor = "Galaxy_" + str(Galaxy_id)
-        self.properties = copy.copy(self.properties)
-        self.properties['Galaxy_id'] = Galaxy_id
+        self._Galaxy_id = galaxy_id
+        self._descriptor = "Galaxy_" + str(galaxy_id)
+        self.properties = {}
+        self.properties['Galaxy_id'] = galaxy_id
 
 
 

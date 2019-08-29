@@ -38,9 +38,12 @@ class MultiFileManager(object) :
     def __init__(self, path, mode='r') :
         self._mode = mode
         if h5py.is_hdf5(path):
-            self._filenames = [path]
+            tmp_filename = path.split("/")[-1]
+            self._path  = path[:-len(tmp_filename)]
+            self._filenames = [tmp_filename]
             self._numfiles = 1
         else:
+            self._path = path
             self._filenames = glob.glob(path + "halo_*_camera_?" + self._suffix)
             self._numfiles = len(self._filenames)
 
@@ -60,10 +63,16 @@ class MultiFileManager(object) :
         return h5py.File(self._filenames[i], self._mode)
 
     def has_file(self, filename):
-        return path+filename in self._filenames
+        if self._path in filename:
+            return filename in self._filenames
+        else:
+            return self.path+filename in self._filenames
 
     def get_file_idx(self, filename):
-        return np.where(path+filename == self._filenames)[0]
+        if self._path in filename:
+            return self._filenames.index(filename) #np.where(filename == self._filenames)[0]
+        else:
+            return self._filenames.index(self._path+filename) #np.where(self._path+filename == self._filenames)[0]
 
     def reopen_in_mode(self, mode):
         if mode!=self._mode:
@@ -72,7 +81,7 @@ class MultiFileManager(object) :
 
 class SDSSMockSurvey(Survey):
     # decide later which are basic loadables...
-    _basic_loadable_keys = {family.train: set(['galaxy', 'mass', 'metals','distance']),
+    _basic_loadable_keys = {family.training: set(['galaxy', 'mass', 'metals','distance']),
                             family.prediction: set(['galaxy', 'mass', 'metals','distance']),
                             family.validation: set(['galaxy', 'mass', 'metals','distance']),
                             None: set(['galaxy'])}
@@ -91,6 +100,7 @@ class SDSSMockSurvey(Survey):
         verbose = kwargs.get('verbose', config['verbose'])
 
         self._path = path
+        self._num_galaxies = len(glob.glob(path + "halo_*_camera_?" + self._suffix))
 
         self.__init_filemanager(path)
         #self.__init_galaxies()  ## fill with content to load all galaxies
@@ -99,8 +109,6 @@ class SDSSMockSurvey(Survey):
         self.__init_loadable_keys()
 
         #gal_list = glob.glob(path + "true/halo_*_camera_?" + _suffix)
-
-        self._num_galaxies = len(glob.glob(path + "halo_*_camera_?" + self._suffix))
 
         self._decorate()
 
@@ -117,8 +125,13 @@ class SDSSMockSurvey(Survey):
         if h5py.is_hdf5(family_map_file):
             self._file_map = h5py.File(family_map_file, "r") # this is supposed to be a dictionary with keys family and arrays of indices or filenames/galaxy names belonging to that family 
         else:
-            self._file_map = []
-
+            self._file_map = {}
+            for x in family.family_names():
+                fam = family.get_family(x)
+                if x == "training":
+                    self._file_map[fam] = glob.glob(self.path + "halo_*_camera_?" + self._suffix)
+                else:
+                    self._file_map[fam] = []
 
     def __init_family_map(self):
         family_slice_start = 0
@@ -139,21 +152,20 @@ class SDSSMockSurvey(Survey):
             self._family_slice[fam] = slice(family_slice_start, family_slice_start + family_length)
             family_slice_start += family_length
             #assert(family_slice_start==self._num_galaxies)
+
         
     def __init_loadable_keys(self):
-
         self._loadable_family_keys = {}
         all_fams = self.families()
-        if len(all_fams)==0:
-            return
 
         for fam in all_fams:
             self._loadable_family_keys[fam] = set(["galaxy"])
             tmp_file = self._file_map[fam][0] #first file in family
-            _file_idx = self._files.get_file_idx(self._file_map[fam][0])
-            for this_key in self._files(_file_idx).keys():
+            
+            _file_idx = self._files.get_file_idx(tmp_file)
+            for this_key in self._files[_file_idx].keys():
                 self._loadable_family_keys[fam].add(this_key)
-            self._loadable_family_keys[fam] = list(self._loadable_family_keys[fam])
+            self._loadable_family_keys[fam] = list(self._loadable_family_keys[fam]) 
 
         self._loadable_keys = set(self._loadable_family_keys[all_fams[0]])
         for fam_keys in self._loadable_family_keys.itervalues():
@@ -210,68 +222,66 @@ class SDSSMockSurvey(Survey):
                 all_fams_to_load = self.families()
             else:
                 target = self[fam]
-                all_fams_to_load = [fam]    
+                all_fams_to_load = [fam]
 
-            target._create_array(array_name, dy, dtype=dtype) #need to check how to deal with images    
+            target._create_array(array_name, dy, dtype=dtype) #need to check how to deal with images
 
             for loading_fam in all_fams_to_load:
                 tmp_arr = []
+                
                 for file in self._file_map[loading_fam]:
                     _file_idx = self._files.get_file_idx(file)
                     if array_name == "galaxy":
                         #instantiate the galaxy object
-                        tmp_arr.append(SDSSMockGalaxy(self._files[file_idx]))
+                        tmp_arr.append(SDSSMockGalaxy(self._files[_file_idx]))
                     else:
                         #if we do not ask for the galaxy itself, load the "postprocessed" array
-                        tmp_arr.append(self._files[file_idx][array_name].value) 
-
+                        tmp_arr.append(self._files[file_idx][array_name].value)     
+                print(tmp_arr)
                 target_array = self[loading_fam][array_name]
-                assert target_array.size == np.asarray(tmp_arr).size    
+                assert target_array.size == np.asarray(tmp_arr).size        
 
-                target_array = tmp_arr  
-
-            if units is not None:
-                target_array *= units * units  #convert from surface properties to real properties
+                target_array = tmp_arr
 
 
     def __get_dtype_dims_and_units(self, fam, translated_name):
 
         if translated_name == "galaxy":
-            dtype = None
+            # we deal with galaxy objects
+            dtype = object
             dy = 1
             inferred_units = None
-
-        if fam is None:
-            fam = self.families()[0]
-
-        representative_dset = None
-        representative_hdf = None
-        # not all arrays are present in all hdfs so need to loop
-        # until we find one
-        for hdf0 in self._hdf_files:
-            try:
-                representative_dset = hdf0[translated_name]
-                representative_hdf = hdf0
-                if hasattr(representative_dset, "psize"):
-                    inferred_units = hdf0[psize] #do something
-
-                if len(representative_dset)!=0:
-                    # suitable for figuring out everything we need to know about this array
-                    break
-            except KeyError:
-                continue
-        if representative_dset is None:
-            raise KeyError("Array is not present in HDF file")
-
-
-        assert len(representative_dset.shape) <= 2
-
-        if len(representative_dset.shape) > 1:
-            dy = representative_dset.shape[1] # here we deal with images...
         else:
-            dy = 1
+            
+            #if fam is None:
+            #    fam = self.families()[0]
 
-        dtype = representative_dset.dtype
+            representative_dset = None
+            representative_hdf = None
+            # not all arrays are present in all hdfs so need to loop
+            # until we find one
+            for hdf0 in self._hdf_files:
+                try:
+                    representative_dset = hdf0[translated_name]
+                    #if hasattr(hdf0, "psize"):
+                    #    inferred_units = hdf0[psize] #do something
+
+                    if len(representative_dset)!=0:
+                        # suitable for figuring out everything we need to know about this array
+                        break
+                except KeyError:
+                    continue
+            if representative_dset is None:
+                raise KeyError("Array is not present in HDF file")
+
+            assert len(representative_dset.shape) <= 2 
+
+            if len(representative_dset.shape) > 1:
+                dy = representative_dset.shape[1] # here we deal with images...
+            else:
+                dy = 1
+
+            dtype = representative_dset.dtype
 
         return dtype, dy, inferred_units
 

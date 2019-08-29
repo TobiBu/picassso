@@ -14,6 +14,8 @@ array.SurveyArray are not important.
 import numpy as np
 import weakref
 import os
+#from . import units as units
+#_units = units
 
 import builtins
 property = builtins.property
@@ -40,8 +42,8 @@ class SurveyArray(np.ndarray):
 
     @property
     def derived(self):
-        if self.sim and self.name:
-            return self.sim.is_derived_array(self.name, getattr(self, 'family', None))
+        if self.survey and self.name:
+            return self.survey.is_derived_array(self.name, getattr(self, 'family', None))
         else:
             return False
 
@@ -50,7 +52,7 @@ class SurveyArray(np.ndarray):
         if value:
             raise ValueError("Can only unlink an array. Delete an array to force a rederivation if this is the intended effect.")
         if self.derived:
-            self.sim.unlink_array(self.name)
+            self.survey.unlink_array(self.name)
 
     def __reduce__(self):
         T = np.ndarray.__reduce__(self)
@@ -59,38 +61,31 @@ class SurveyArray(np.ndarray):
         return T
 
     def __setstate__(self, args):
-        self._units = args[0]
-        self.sim = None
+        self.survey = None
         self._name = None
         np.ndarray.__setstate__(self, args[1:])
 
-    def __new__(subtype, data, units=None, sim=None, **kwargs):
+    def __new__(subtype, data, survey=None, **kwargs):
         new = np.array(data, **kwargs).view(subtype)
-        if hasattr(data, 'units') and hasattr(data, 'sim') and units is None and sim is None:
-            units = data.units
-            sim = data.sim
+        if hasattr(data, 'survey') and survey is None:
+            survey = data.survey
 
         if hasattr(data, 'family'):
             new.family = data.family
 
-        if isinstance(units, str):
-            units = _units.Unit(units)
-
-        new._units = units
-
-        # Always associate a SurveyArray with the top-level snapshot.
+        # Always associate a SurveyArray with the top-level survey.
         # Otherwise we run into problems with how the reference should
-        # behave: we don't want to lose the link to the simulation by
+        # behave: we don't want to lose the link to the survey by
         # storing a weakref to a SubSnap that might be deconstructed,
-        # but we also wouldn't want to store a strong ref to a SubSnap
-        # since that would keep the entire simulation alive even if
+        # but we also wouldn't want to store a strong ref to a SubSurvey
+        # since that would keep the entire survey alive even if
         # deleted.
         #
-        # So, set the sim attribute to the top-level snapshot and use
+        # So, set the survey attribute to the top-level survey and use
         # the normal weak-reference system.
 
-        if sim is not None:
-            new.sim = sim.ancestor
+        if survey is not None:
+            new.survey = survey.ancestor
             # will generate a weakref automatically
 
         new._name = None
@@ -100,63 +95,22 @@ class SurveyArray(np.ndarray):
     def __array_finalize__(self, obj):
         if obj is None:
             return
-        elif obj is not self and hasattr(obj, 'units'):
-            self._units = obj.units
-            self._sim = obj._sim
-            self._name = obj._name
-            if hasattr(obj, 'family'):
-                self.family = obj.family
+        elif obj is not self:
+            try:
+                self._survey = obj._survey
+                self._name = obj._name
+                if hasattr(obj, 'family'):
+                    self.family = obj.family
+            except AttributeError:
+                self._survey = lambda: None
+                self._name = None
         else:
-            self._units = None
-            self._sim = lambda: None
+            self._survey = lambda: None
             self._name = None
 
-    def __array_wrap__(self, array, context=None):
-        if context is None:
-            n_array = array.view(SurveyArray)
-            return n_array
-
-        try:
-            ufunc = context[0]
-            output_units = SurveyArray._ufunc_registry[ufunc](*context[1])
-            n_array = array.view(SurveyArray)
-            n_array.units = output_units
-            n_array.sim = self.sim
-            n_array._name = self._name
-            return n_array
-        except (KeyError, units.UnitsException):
-            return array
-
-    @staticmethod
-    def ufunc_rule(for_ufunc):
-        def x(fn):
-            SurveyArray._ufunc_registry[for_ufunc] = fn
-            return fn
-
-        return x
-
-    @property
-    def units(self):
-        if hasattr(self.base, 'units'):
-            return self.base.units
-        else:
-            if self._units is None:
-                return _units.no_unit
-            else:
-                return self._units
-
-    @units.setter
-    def units(self, u):
-        if not isinstance(u, units.UnitBase) and u is not None:
-            u = units.Unit(u)
-
-        if hasattr(self.base, 'units'):
-            self.base.units = u
-        else:
-            if hasattr(u, "_no_unit"):
-                self._units = None
-            else:
-                self._units = u
+    def __array_wrap__(self, array):
+        n_array = array.view(SurveyArray)
+        return n_array
 
     @property
     def name(self):
@@ -165,23 +119,23 @@ class SurveyArray(np.ndarray):
         return self._name
 
     @property
-    def sim(self):
-        if hasattr(self.base, 'sim'):
-            if self.family and self.base.sim:
-                return self.base.sim[self.family]
+    def survey(self):
+        if hasattr(self.base, 'survey'):
+            if self.family and self.base.survey:
+                return self.base.survey[self.family]
             else:
-                return self.base.sim
-        return self._sim()
+                return self.base.survey
+        return self._survey()
 
-    @sim.setter
-    def sim(self, s):
-        if hasattr(self.base, 'sim'):
-            self.base.sim = s
+    @survey.setter
+    def survey(self, s):
+        if hasattr(self.base, 'survey'):
+            self.base.survey = s
         else:
             if s is not None:
-                self._sim = weakref.ref(s)
+                self._survey = weakref.ref(s)
             else:
-                self._sim = lambda: None
+                self._survey = lambda: None
 
     @property
     def family(self):
@@ -195,122 +149,41 @@ class SurveyArray(np.ndarray):
         self._family = fam
 
     def __mul__(self, rhs):
-        if isinstance(rhs, _units.UnitBase):
-            x = self.copy()
-            x.units = x.units * rhs
-            return x
-        else:
-            return np.ndarray.__mul__(self, rhs)
+        return np.ndarray.__mul__(self, rhs)
 
     def __div__(self, rhs):
-        if isinstance(rhs, _units.UnitBase):
-            x = self.copy()
-            x.units = x.units / rhs
-            return x
-        else:
-            return np.ndarray.__div__(self, rhs)
+        return np.ndarray.__div__(self, rhs)
 
     def __truediv__(self, rhs):
-        if isinstance(rhs, _units.UnitBase):
-            x = self.copy()
-            x.units = x.units / rhs
-            return x
-        else:
-            return np.ndarray.__truediv__(self, rhs)
+        return np.ndarray.__truediv__(self, rhs)
 
     def __imul__(self, rhs):
-        if isinstance(rhs, _units.UnitBase):
-            self.units *= rhs
-        else:
-            np.ndarray.__imul__(self, rhs)
-            try:
-                self.units *= rhs.units
-            except AttributeError:
-                pass
+        np.ndarray.__imul__(self, rhs)
         return self
 
     def __idiv__(self, rhs):
-        if isinstance(rhs, _units.UnitBase):
-            self.units /= rhs
-        else:
-            np.ndarray.__idiv__(self, rhs)
-            try:
-                self.units /= rhs.units
-            except AttributeError:
-                pass
+        np.ndarray.__idiv__(self, rhs)
         return self
 
     def __itruediv__(self, rhs):
-        if isinstance(rhs, _units.UnitBase):
-            self.units /= rhs
-        else:
-            np.ndarray.__itruediv__(self, rhs)
-            try:
-                self.units /= rhs.units
-            except AttributeError:
-                pass
+        np.ndarray.__itruediv__(self, rhs)
         return self
 
     def conversion_context(self):
-        if self.sim is not None:
-            return self.sim.conversion_context()
+        if self.survey is not None:
+            return self.survey.conversion_context()
         else:
             return {}
 
     def _generic_add(self, x, add_op=np.add):
-        if hasattr(x, 'units') and not hasattr(self.units, "_no_unit") and not hasattr(x.units, "_no_unit"):
-            # Check unit compatibility
-
-            try:
-                context = x.conversion_context()
-            except AttributeError:
-                context = {}
-
-            # Our own contextual information overrides x's
-            context.update(self.conversion_context())
-
-            try:
-                cr = x.units.ratio(self.units,
-                                   **context)
-            except units.UnitsException:
-                raise ValueError("Incompatible physical dimensions %r and %r, context %r" % (
-                    str(self.units), str(x.units), str(self.conversion_context())))
-
-            if cr == 1.0:
-                r = add_op(self, x)
-
-            else:
-                b = np.multiply(x, cr)
-                if hasattr(b, 'units'):
-                    b.units = None
-
-                if not np.can_cast(b.dtype,self.dtype):
-                    b = np.asarray(b, dtype=x.dtype)
-
-
-                r = add_op(self, b)
-
-            return r
-
-        elif units.is_unit(x):
-            x = x.in_units(self.units, **self.conversion_context())
-            r = add_op(self, x)
-            return r
-        else:
-            r = add_op(self, x)
-            return r
+        r = add_op(self, x)
+        return r
 
     def __add__(self, x):
-        if isinstance(x, _units.UnitBase):
-            return x + self
-        else:
-            return self._generic_add(x)
+        return self._generic_add(x)
 
     def __sub__(self, x):
-        if isinstance(x, _units.UnitBase):
-            return (-x + self).in_units(self.units)
-        else:
-            return self._generic_add(x, np.subtract)
+        return self._generic_add(x, np.subtract)
 
     def __iadd__(self, x):
         self._generic_add(x, np.ndarray.__iadd__)
@@ -340,187 +213,97 @@ class SurveyArray(np.ndarray):
         if type(r) is not SurveyArray:
             return r
 
-        if self.units is not None and (
-                isinstance(x, fractions.Fraction) or
-                isinstance(x, int)):
-            r.sim = self.sim
-            r.units = self.units ** x
-        else:
-            r.units = None
-            r.sim = self.sim
+        r.survey = self.survey
 
         return r
 
     def __repr__(self):
         x = np.ndarray.__repr__(self)
-        if not hasattr(self.units, "_no_unit"):
-            return x[:-1] + ", '" + str(self.units) + "')"
-        else:
-            return x
+        return x
 
     def __setitem__(self, item, to):
-        if hasattr(to, "in_units") and not hasattr(self.units, "_no_unit") and not hasattr(to.units, "_no_unit"):
-            np.ndarray.__setitem__(self, item, to.in_units(self.units))
-        else:
-            np.ndarray.__setitem__(self, item, to)
+        np.ndarray.__setitem__(self, item, to)
 
     def __setslice__(self, a, b, to):
         self.__setitem__(slice(a, b), to)
 
     def abs(self, *args, **kwargs):
         x = np.abs(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def cumsum(self, axis=None, dtype=None, out=None):
         x = np.ndarray.cumsum(self, axis, dtype, out)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def prod(self, axis=None, dtype=None, out=None):
         x = np.ndarray.prod(self, axis, dtype, out)
-        if hasattr(x, 'units') and axis is not None and self.units is not None:
-            x.units = self.units ** self.shape[axis]
-        if hasattr(x, 'units') and axis is None and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def sum(self, *args, **kwargs):
         x = np.ndarray.sum(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def mean(self, *args, **kwargs):
         x = np.ndarray.mean(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def mean_by_mass(self, *args, **kwargs):
-        return self.sim.mean_by_mass(self.name)
+        return self.survey.mean_by_mass(self.name)
 
     def max(self, *args, **kwargs):
         x = np.ndarray.max(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def min(self, *args, **kwargs):
         x = np.ndarray.min(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def ptp(self, *args, **kwargs):
         x = np.ndarray.ptp(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def std(self, *args, **kwargs):
         x = np.ndarray.std(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
 
     def var(self, *args, **kwargs):
         x = np.ndarray.var(self, *args, **kwargs)
-        if hasattr(x, 'units') and self.units is not None:
-            x.units = self.units ** 2
-        if hasattr(x, 'sim') and self.sim is not None:
-            x.sim = self.sim
+        if hasattr(x, 'survey') and self.survey is not None:
+            x.survey = self.survey
         return x
-
-    def set_units_like(self, new_unit):
-        """Set the units for this array by performing dimensional analysis
-        on the supplied unit and referring to the units of the original
-        file"""
-
-        if self.sim is not None:
-            self.units = self.sim.infer_original_units(new_unit)
-        else:
-            raise RuntimeError("No link to Survey")
-
-    def set_default_units(self, quiet=False):
-        """Set the units for this array by performing dimensional analysis
-        on the default dimensions for the array."""
-
-        if self.sim is not None:
-            try:
-                self.units = self.sim._default_units_for(self.name)
-            except (KeyError, units.UnitsException):
-                if not quiet:
-                    raise
-        else:
-            raise RuntimeError("No link to Survey")
-
-    def in_original_units(self):
-        """Retun a copy of this array expressed in the units
-        specified in the parameter file."""
-
-        return self.in_units(self.sim.infer_original_units(self.units))
-
-    def in_units(self, new_unit, **context_overrides):
-        """Return a copy of this array expressed relative to an alternative
-        unit."""
-
-        context = self.conversion_context()
-        context.update(context_overrides)
-
-        if self.units is not None:
-            r = self * self.units.ratio(new_unit,
-                                        **context)
-            r.units = new_unit
-            return r
-        else:
-            raise ValueError("Units of array unknown")
-
-    def convert_units(self, new_unit):
-        """Convert units of this array in-place. Note that if
-        this is a sub-view, the entire base array will be converted."""
-
-        if self.base is not None and hasattr(self.base, 'units'):
-            self.base.convert_units(new_unit)
-        else:
-            self *= self.units.ratio(new_unit,
-                                     **(self.conversion_context()))
-            self.units = new_unit
 
     def write(self, **kwargs):
         """
         Write this array to disk according to the standard method
         associated with its base file. This is equivalent to calling
 
-        >>> sim.gas.write_array('array')
+        >>> survey.train.write_array('array')
 
         in the case of writing out the array 'array' for the gas
         particle family.  See the description of
-        :func:`picasso.snapshot.Survey.write_array` for options.
+        :func:`picasso.survey.Survey.write_array` for options.
         """
 
-        if self.sim and self.name:
-            self.sim.write_array(self.name, fam=self.family, **kwargs)
+        if self.survey and self.name:
+            self.survey.write_array(self.name, fam=self.family, **kwargs)
         else:
             raise RuntimeError("No link to Survey")
 
@@ -536,19 +319,6 @@ class SurveyArray(np.ndarray):
 
 def _unit_aware_comparison(ar, other, comparison_op=None):
     # guaranteed to be called with ar a SurveyArray instance
-    if units.is_unit_like(other):
-        if units.has_units(ar):
-            # either other is a unit, or an array with a unit If
-            # it's an array with a unit that matches our own, we
-            # want to fall straight through to the comparison
-            # operation. If it's an array with a unit that doesn't
-            # match ours, OR it's a plain unit, we want to
-            # convert first.
-            if units.is_unit(other) or other.units != ar.units:
-                other = other.in_units(ar.units)
-        else:
-            raise units.UnitsException("One side of a comparison has units and the other side does not")
-
     return comparison_op(ar, other)
 
 for f in np.ndarray.__lt__, np.ndarray.__le__, np.ndarray.__eq__, \
@@ -568,8 +338,8 @@ for f in np.ndarray.__lt__, np.ndarray.__le__, np.ndarray.__eq__, \
 
 def _dirty_fn(w):
     def q(a, *y, **kw):
-        if a.sim is not None and a.name is not None:
-            a.sim._dirty(a.name)
+        if a.survey is not None and a.name is not None:
+            a.survey._dirty(a.name)
 
         if kw != {}:
             return w(a, *y, **kw)
@@ -597,118 +367,6 @@ _dirty_fns = ['__setitem__', '__setslice__',
 
 for x in _dirty_fns:
     setattr(SurveyArray, x, _dirty_fn(getattr(SurveyArray, x)))
-
-_u = SurveyArray.ufunc_rule
-
-
-def _get_units_or_none(*a):
-    if len(a) == 1:
-        if hasattr(a[0], "units"):
-            return a[0].units
-        else:
-            return None
-    else:
-        r = []
-        for x in a:
-            if hasattr(x, "units"):
-                r.append(x.units)
-            else:
-                r.append(None)
-
-        return r
-
-#
-# Now we have the rules for unit outputs after numpy built-in ufuncs
-#
-# Note if these raise UnitsException, a standard numpy array is returned
-# from the ufunc to indicate the units can't be calculated. That means
-# ufuncs can do 'non-physical' things, but then return ndarrays instead
-# of SurveyArrays.
-
-
-@_u(np.sqrt)
-def _sqrt_units(a):
-    if a.units is not None:
-        return a.units ** (1, 2)
-    else:
-        return None
-
-
-@_u(np.multiply)
-def _mul_units(a, b):
-    a_units, b_units = _get_units_or_none(a, b)
-    if a_units is not None and b_units is not None:
-        return a_units * b_units
-    elif a_units is not None:
-        return a_units
-    else:
-        return b_units
-
-
-@_u(np.divide)
-@_u(np.true_divide)
-def _div_units(a, b):
-    a_units, b_units = _get_units_or_none(a, b)
-    if a_units is not None and b_units is not None:
-        return a_units / b_units
-    elif a_units is not None:
-        return a_units
-    else:
-        return 1 / b_units
-
-
-@_u(np.add)
-@_u(np.subtract)
-def _consistent_units(a, b):
-    a_units, b_units = _get_units_or_none(a, b)
-    if a_units is not None and b_units is not None:
-        if a_units == b_units:
-            return a_units
-        else:
-            raise units.UnitsException("Incompatible units")
-
-    elif a_units is not None:
-        return a_units
-    else:
-        return b_units
-
-
-@_u(np.power)
-def _pow_units(a, b):
-    a_units = _get_units_or_none(a)
-    if a_units is not None:
-        if not isinstance(b, int) and not isinstance(b, units.Fraction):
-            raise units.UnitsException("Can't track units")
-        return a_units ** b
-    else:
-        return None
-
-
-@_u(np.arctan)
-@_u(np.arctan2)
-@_u(np.arcsin)
-@_u(np.arccos)
-@_u(np.arcsinh)
-@_u(np.arccosh)
-@_u(np.arctanh)
-@_u(np.sin)
-@_u(np.tan)
-@_u(np.cos)
-@_u(np.sinh)
-@_u(np.tanh)
-@_u(np.cosh)
-def _trig_units(*a):
-    return 1
-
-
-@_u(np.greater)
-@_u(np.greater_equal)
-@_u(np.less)
-@_u(np.less_equal)
-@_u(np.equal)
-@_u(np.not_equal)
-def _comparison_units(*a):
-    return None
 
 
 class IndexedSurveyArray(object):
@@ -769,39 +427,19 @@ class IndexedSurveyArray(object):
         return self.base.ndim
 
     @property
-    def units(self):
-        return self.base.units
-
-    @units.setter
-    def units(self, u):
-        self.base.units = u
-
-    @property
-    def sim(self):
-        if self.base.sim is not None:
-            return self.base.sim[self._ptr]
+    def survey(self):
+        if self.base.survey is not None:
+            return self.base.survey[self._ptr]
         else:
             return None
 
-    @sim.setter
-    def sim(self, s):
-        self.base.sim = s
+    @survey.setter
+    def survey(self, s):
+        self.base.survey = s
 
     @property
     def dtype(self):
         return self.base.dtype
-
-    def conversion_context(self):
-        return self.base.conversion_context()
-
-    def set_units_like(self, new_unit):
-        self.base.set_units_like(new_unit)
-
-    def in_units(self, new_unit, **context_overrides):
-        return IndexedSurveyArray(self.base.in_units(new_unit, **context_overrides), self._ptr)
-
-    def convert_units(self, new_unit):
-        self.base.convert_units(new_unit)
 
     def write(self, **kwargs):
         self.base.write(**kwargs)
