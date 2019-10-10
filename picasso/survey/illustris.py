@@ -243,8 +243,6 @@ class SDSSMockSurvey(Survey):
                 assert target_array.size == np.asarray(tmp_arr).size
                 
                 target_array[:] = tmp_arr
-                print("target_array")
-                print(target_array[:10])
 
 
     def __get_dtype_dims_and_units(self, fam, translated_name):

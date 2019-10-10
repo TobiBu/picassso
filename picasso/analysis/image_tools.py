@@ -8,13 +8,15 @@ A set of classes and functions for analysing galaxy images.
 """
 
 import numpy as np
-import os
+import os, pickle
 
 from photutils.isophote import *
 
 from tqdm import tqdm
 
-from . import survey, galaxy
+from .. import survey, galaxy
+from ..survey import Survey
+from ..galaxy import Galaxy
 
 #modify the code below to comply with the Survey and galaxy objects.
 # e.g. passing a galaxy objet should return only the fit for that galaxy
@@ -133,7 +135,7 @@ def _fit_image(galaxy, key='stars_Masses', thresh=0.1, plot=False, save=True, **
 		# no pre-calculated geometry found, lets do the fit
 		try:
 			# I think we need to pop the specific kwargs from dict...
-			fit = elliptical_fit(galaxy[key], thresh=thresh, **kwargs)
+			fit = elliptical_fit(galaxy.properties[key], thresh=thresh, **kwargs)
 			geometry = fit.sample.geometry
 		except:
 			print('No elliptical fit possible for ' + galaxy._descriptor + '!')
@@ -190,15 +192,55 @@ def fit_image(galaxy, key='stars_Masses', thresh=0.1, plot=False, save=True, **k
 	elif isinstance(galaxy, Survey):
 		# we are dealing with a whole survey of galaxies, lets iterate over all galaxies in the survey.
 		# should we parallelize it???
-		geometry = np.asarray([_fit_image(x, key=key, thresh=thresh, plot=plot, save=save, **kwargs) for x in tqdm(galaxy)])
+		geometry = np.asarray([_fit_image(x, key=key, thresh=thresh, plot=plot, save=save, **kwargs) for x in tqdm(galaxy['galaxy'])])
 
 	else:
-		raise ValueError("Unknown Object type: " galaxy)
+		raise ValueError("Unknown Object type: %s" %galaxy)
 
 	return geometry
 
+def build_isolist(image, geometry, sma_min=12.5, sma_max=125, sma_steps=10, **kwargs):
+    '''
+    This function loops through a number of semi-major axis values and creates 
+    a list of isophotes of given geometry from the input image.
 
-def _get_isolists(galaxy, geometry, key=None, plot=False):
+    for further information see:
+            https://github.com/astropy/photutils-datasets/blob/master/notebooks/isophote/isophote_example4.ipynb
+
+    Input:
+
+            image: input image
+
+            geometry: instance of EllipseGeometry in order to specify the ellipse geometry to use.
+
+            sma_min, sma_max: minimum and maximum of semi-major axis values in pixel
+
+            sma_steps: number of bins to take in semi-major axis
+    '''
+
+    # Temporary list to store instances of Isophote
+    isolist_ = []
+
+    # loop over semi-major axis values
+    smas = np.linspace(sma_min, sma_max, sma_steps)
+    for sma in smas:
+        # create ellipse sample
+        sample = EllipseSample(image, sma, geometry=geometry)
+        sample.update()
+        # Create an Isophote instance with the sample, and store it in
+        # temporary list. Here we are using '0' as the number of iterations,
+        # 'True' for the validity status, and '0' for the stop code. These
+        # are in fact arbitrary in this context; you could use anything you
+        # like.
+        iso_ = Isophote(sample, 0, True, 0)
+        isolist_.append(iso_)
+
+    # Build the IsophoteList instance with the result.
+    isolist = IsophoteList(isolist_)
+
+    return isolist
+
+def _get_isolists(galaxy, geometry, key=None, plot=False, **kwargs):
 	'''
 	Get the isocontour lists for the properties as a photutils.isophote.IsophoteList object.
 
@@ -226,16 +268,19 @@ def _get_isolists(galaxy, geometry, key=None, plot=False):
 		iso_dict = {}
 
 		if key:
-			isolist = build_isolist(galaxy[key], geometry)
+			isolist = build_isolist(galaxy.properties[key], geometry)
 
 			iso_dict[key] = isolist
 		
 		else:
-			for key in galaxy.properties.keys:
+			for key in galaxy.properties.keys():
 
-				isolist = build_isolist(galaxy[key], geometry)
+				if isinstance(galaxy.properties[key], np.ndarray):
+					# this check might fail in future, when we have other galaxy properties 
+					# which are of instance np.ndarray but are not an imaage...
+					isolist = build_isolist(galaxy.properties[key], geometry)
 
-				iso_dict[key] = isolist
+					iso_dict[key] = isolist
 
 		f = open(filename, 'wb')
 		pickle.dump(iso_dict, f)
@@ -246,7 +291,8 @@ def _get_isolists(galaxy, geometry, key=None, plot=False):
 
 	return iso_dict
 
-def get_isolists(galaxy, geometry, key=None, plot=False):
+
+def get_isolists(galaxy, geometry, key=None, plot=False, **kwargs):
 	'''
 	Get the isocontour lists for the properties as a photutils.isophote.IsophoteList object.
 
@@ -265,14 +311,15 @@ def get_isolists(galaxy, geometry, key=None, plot=False):
 
 	if isinstance(galaxy, Galaxy):
 		# we are dealing with a single galaxy object.
-		iso_dict = _get_isolists(galaxy, geometry, key=key, plot=plot)
+		iso_dict = _get_isolists(galaxy, geometry, key=key, plot=plot, **kwargs)
 
 	elif isinstance(galaxy, Survey):
 		# we are dealing with a whole survey of galaxies, lets iterate over all galaxies in the survey.
 		# should we parallelize it???
-		iso_dict = np.asarray([_get_isolists(x, g, key=key, plot=plot) for x, g in tqdm(zip(galaxy,geometry))])
+		iso_dict = np.asarray([_get_isolists(x, g, key=key, plot=plot, **kwargs) for x, g in tqdm(zip(galaxy['galaxy'],geometry))])
 
 	return iso_dict
+
 
 def _get_pixel_sum(iso_dict, prop, sma, sma_low=None):
 	'''
@@ -317,6 +364,7 @@ def get_pixel_sum(iso_dict, prop, sma, sma_low=None):
 	
 
 def _get_image_sum(galaxy, key):
+	# This can be moved easily to a decorator function of the Galaxy objects / Survey objects....
 	'''
 	Get a sum over all pixel.
 
@@ -327,70 +375,12 @@ def _get_image_sum(galaxy, key):
 	'''
 
 	if isinstance(galaxy, Galaxy):
-		sum = np.sum(galaxy[key])
+		sum = np.sum(galaxy.properties[key])
 
 	elif isinstance(galaxy, Survey):
-		sum = np.asarray([np.sum(g[key]) for g in tqdm(galaxy)])
+		sum = np.asarray([np.sum(g.properties[key]) for g in tqdm(galaxy['galaxy'])])
 
 	return sum
-	
-
-def fit_gradient(iso_dict, prop, log=True):
-	"""
-	fit a straight line to the intensity values which are actually only the mean value along an elliptical path.
-
-	Input:
-			iso_dict: isolist dictionary as defined by the function get_isolists.
-
-			prop: key to specify the property
-
-			log: bool to decide if gradient should be calculated from log scaled prop
-
-	Return:
-			Radial gradient.
-
-	"""
-
-	from scipy.stats import linregress
-
-	if log:
-		y = np.log10(iso_dict[prop].intens)
-	else:
-		y = iso_dict[prop].intens
-
-	slope, intercept, r_value, p_value, std_err = linregress(iso_dict[prop].sma, y)
-
-	return slope
-
-def fit_gradient_manually(sma_arr, sum_arr, pix_arr, log=True):
-	"""
-	fit a straight line to the property values.
-
-	Input:
-		sma_arr: array containing the semi major axis values of the annuli.
-
-		sum_arr: array containing the sum of pixel values in elliptical annulus.
-
-		pix_arr: array containing the number of pixels in elliptical annulus.
-
-		log: bool to decide if gradient should be calculated from log scaled prop
-
-	Return:
-		Radial gradient.
-
-	"""
-
-	from scipy.stats import linregress
-
-	mean = np.asarray(sum_arr)/np.asarray(pix_arr)
-	if log:
-		y = np.log10( mean )
-	else:
-		y = mean
-
-	slope, intercept, r_value, p_value, std_err = linregress(sma_arr,y)
-
-	return slope
 
 
 

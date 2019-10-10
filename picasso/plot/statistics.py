@@ -7,6 +7,10 @@ A set of functions to plot Suvrey statistics and analysis results.
 
 """
 
+
+
+## move some of the stuff to a util.py file???
+
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt

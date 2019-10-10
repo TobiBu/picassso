@@ -38,8 +38,9 @@ class SDSSMockGalaxy(Galaxy):
     def __init_predicted_properties(self, subfolder='prediction/'):
         # try to load properties which are the result of the ML prediction 
 
-        _pred_path = self._base_path+'/'+subfolder
-        _file = h5py.File(pred_path, "r")
+        _pred_path = self._base_path+subfolder+self._file.filename.split('/')[-1]
+        print(_pred_path)
+        _file = h5py.File(_pred_path, "r")
         image_stack, keys, psize = util._load_halo_properties(_file)
         
         # self.properties['psize_pred'] = psize #psize should be the same as the true image
@@ -51,7 +52,7 @@ class SDSSMockGalaxy(Galaxy):
             #should we make the following below a separate step? 
             self.properties[key+'_pred'] = np.asarray(util.scale_to_physical_units(image_stack[idx], psize)) 
 
-    def __init_properties(self):
+    def __init_properties(self, subfolder='prediction/'):
         # init true properties
         image_stack, keys, psize = util._load_halo_properties(self._file)
         
@@ -67,8 +68,8 @@ class SDSSMockGalaxy(Galaxy):
         # assumption here is these are seperate files in a subfolder named < prediction >
         # so, let's try to load them as well
 
-        if os.path.exists(self._base_path+'/'+subfolder):
-            __init_predicted_properties(self, subfolder='prediction/')
+        if os.path.exists(self._base_path+subfolder):
+            self.__init_predicted_properties(subfolder=subfolder)
 
 
     #ideas for more utilities:
