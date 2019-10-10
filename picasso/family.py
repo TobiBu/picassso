@@ -56,8 +56,7 @@ def get_family(name, create=False):
     if create:
         return Family(name)
     else:
-        raise ValueError(name +
-                         " not a family")  # is ValueError the right thing here?
+        raise ValueError(name + " not a family")  # is ValueError the right thing here?
 
 
 class Family(object):

@@ -8,6 +8,21 @@ from astropy.cosmology import WMAP7 as cosmo
 
 # this file contains utility functions used to load data
 
+
+def score(true_prop_arr, pred_prop_arr, score_type):
+    """
+    defines a wrapper around a scoring function. This can be used to calculate the score of the predicition by passing an array containing
+    either pixel values of a single galaxy for which the score will be evaluated or an array containing ensemble values, 
+    like e.g. the total stellar mass of the galaxy. score_type the specifies what kind of scoring funtion should be used, e.g. simple standard deviation,
+    or standard error estimates or self-defined measures.
+    """
+
+    if score_type == 'log_diff':
+        score = np.log10(true_prop_arr) - np.log10(pred_prop_arr)
+
+    return score
+
+    
 def congrid(a, newdims, centre=False, minusone=False):
     ''' Slimmed down version of congrid as originally obtained from:
         http://wiki.scipy.org/Cookbook/Rebinning
