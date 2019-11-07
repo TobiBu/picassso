@@ -307,10 +307,10 @@ class Survey(object):
         
         self.__resolve_obscuring_family_array(name)
 
-        try:
-            self.__load_if_required(name)
-        except:
-            self.__derive_if_required(name)
+        
+        self.__load_if_required(name)
+        
+        self.__derive_if_required(name)
 
         return self._get_array(name)
 
@@ -730,8 +730,11 @@ class Survey(object):
 
         if ndim == 1:
             dims = self._num_galaxies
+        elif isinstance(ndim,tuple):
+            dims = (self._num_galaxies,) + ndim
         else:
             dims = (self._num_galaxies, ndim)
+            print(dims)
 
         if shared is None:
             shared = self._shared_arrays
@@ -1100,8 +1103,6 @@ class Survey(object):
                     name, ndim, dtype=result.dtype, derived=not fn.__stable__)
                 write_array = self[fam]._get_array(
                     name, always_writable=True)
-
-            self.ancestor._autoconvert_array_unit(result)
 
             write_array[:] = result
 

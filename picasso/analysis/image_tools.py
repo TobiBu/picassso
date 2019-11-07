@@ -18,10 +18,9 @@ from .. import survey, galaxy
 from ..survey import Survey
 from ..galaxy import Galaxy
 
-#modify the code below to comply with the Survey and galaxy objects.
-# e.g. passing a galaxy objet should return only the fit for that galaxy
-# passing a Survey array should iterate over all galaxies in that Survey and 
-# return an array of fits? Or do we attach the fit to the galaxy object as a property?
+# modify the code below to comply with the Survey and galaxy objects derived arrays once the key error is removed...
+# get the RGB image functions from pynbody to combine u,g,r,i.z images to nice RGB images...
+
 
 def circular_geometry(x0=128, y0=128, sma=25):
 	'''Initialize circular geometry object from ellipse geometry.
@@ -382,65 +381,6 @@ def _get_image_sum(galaxy, key):
 
 	return sum
 
-
-
-
-
-
-
-
-
-
-
-
-
-### old code
-	filename = path_prefix + gal_file[:-16] + 'ellipse_geometry.dat'
-
-	if not os.path.isfile(filename):
-
-		galnr = gal_file.split('_')[-5]
-		camera = gal_file.split('_')[-3]
-
-		image_stack, keys, psize = load_halo_properties(galnr, camera, path=path_prefix)
-
-		idx = keys.index(key)
-		image = np.asarray(scale_to_physical_units(image_stack[idx], psize))
-
-		try:
-			fit = elliptical_fit(image, thresh=thresh)
-			geometry = fit.sample.geometry
-			#if fit.stop_code > 1:
-			#    print('Bad elliptical fit for ' + gal_file[:-16] + '!')
-			#    print('Trying circular aperture.')
-			#    fit = elliptical_fit(image, thresh=thresh, eps=0.01)
-			#    geometry = fit.sample.geometry
-		except:
-			# in case no fit could be performed
-			print('No elliptical fit possible for ' + gal_file[:-16] + '!')
-			print('Rolling back to circular aperture.')
-			geometry = circular_geometry()
-
-		# not needed here. simply save the geometry of the ellipse fitted
-		# build isolist when needed
-		#isolist = build_isolist(x_image)
-		if plot:
-			import matplotlib.pylab as plt
-			plt.imshow(image)
-			x, y, = fit.sampled_coordinates()
-			plt.plot(x, y, color='w')
-			plt.savefig(filename[:-20] + '.pdf')
-			plt.close()
-
-		f = open(filename, 'wb')
-		pickle.dump({'geometry': geometry}, f)
-		f.close()
-
-	else:
-		data_ = pickle.load(open(filename, 'rb'))
-		geometry = data_['geometry']
-
-	return geometry
 
 
 

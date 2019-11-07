@@ -5,6 +5,11 @@ from . import Galaxy
 from .. import survey, array
 from .. import util
 
+
+###
+# Need to add a handler for the photometric images...
+###
+
 class SDSSMockGalaxy(Galaxy):
     """
     Illustris SDSS Mock galaxy class
@@ -39,7 +44,6 @@ class SDSSMockGalaxy(Galaxy):
         # try to load properties which are the result of the ML prediction 
 
         _pred_path = self._base_path+subfolder+self._file.filename.split('/')[-1]
-        print(_pred_path)
         _file = h5py.File(_pred_path, "r")
         image_stack, keys, psize = util._load_halo_properties(_file)
         

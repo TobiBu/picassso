@@ -3,13 +3,9 @@
 statistics
 ==========
 
-A set of functions to plot Suvrey statistics and analysis results.
+A set of functions to plot Survey statistics and analysis results.
 
 """
-
-
-
-## move some of the stuff to a util.py file???
 
 import numpy as np
 import matplotlib
@@ -17,14 +13,57 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-import seaborn as sns
+from scipy.stats import binned_statistic, binned_statistic_2d
 
 from tqdm import tqdm
 
+def perc_low(x):
+    return np.percentile(x,16)
 
-def make_scatterplot(x, y, axis, **kwargs):
+def perc_high(x):
+    return np.percentile(x,84)
 
-    from scipy.stats import binned_statistic_2d
+def picasso_plot(x, y, axis, **kwargs):
+	'''
+	Make a scatter or respective density plot of two properties x, y where for high density regions a 2d histogram is plotted and 
+    outliers are plotted as a scatter plot.
+
+	Input:
+ 	   x, y: x and y data to be plotted	
+
+	    filename: name to save the plot. If not given, the axis object is returned.	
+
+	    axis: if provided, the data is plotted into this object, otherwise a new axis object is created.	
+
+	    add_mean: if True, a line for the mean relation in the color mean_color is added.	
+
+	    contours: if True instead of density plot only contours are plotted.	
+
+	    bins: number of bins to use	
+
+	    cmin: minimum number of counts in bin	
+
+	    optional arguments:	
+
+	    num_cont: number of contour levels	
+
+	    cont_colors: color of contours	
+
+	    fontsize: fontsize for contours	
+
+	    cmap: colormap for the density plot	
+
+	    xlabel: x axis label	
+
+	    ylabel: y axis label	
+
+	    logscale: default True, if not linear scale mostly used for the binning of data for the density plots.
+
+	Return:
+
+		axis object containing the plot.
+
+    '''
 
     from matplotlib.colors import LogNorm
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -49,41 +88,13 @@ def make_scatterplot(x, y, axis, **kwargs):
     mean_color = kwargs.pop('mean_color', 'c')
     lw = kwargs.pop('lw',2)
 
-    if scatter == True:
-        # first do the scatter plot to incorporate outliers
-        if scatter_density == True:
-            # taken from: 
-            # https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
-            from scipy.stats import gaussian_kde
-            # Calculate the point density
-            if logscale == True:
-                mask = (x != 0) & (y != 0)
-                x = x[mask]
-                y = y[mask]
-                #check also for nan
-                #mask = np.isfinite(x) & np.isfinite(y)
-                #x = x[mask]
-                #y = y[mask]
-                xy = np.vstack([np.log10(x),np.log10(y)])
-            else:
-                #check also for nan
-                mask = np.isfinite(x) & np.isfinite(y)
-                x = x[mask]
-                y = y[mask]
 
-                xy = np.vstack([x,y])
-            
-            z = gaussian_kde(xy)(xy)
+    if not axis:
+        fig = plt.figure()
+        axis = plt.subplot(111)
 
-            # Sort the points by density, so that the densest points are plotted last
-            idx = z.argsort()
-            x, y, z = x[idx], y[idx], z[idx]
 
-            axis.scatter(x, y, c=z, s=msize, edgecolor='', rasterized=rasterized, cmap=cmap, **kwargs)
-        else:
-            axis.scatter(x, y, color=color, s=msize, rasterized=rasterized, cmap=cmap, **kwargs)
-
-    if logscale == True:
+    if logscale:
         x_to_bin = np.log10(x)
         y_to_bin = np.log10(y)
         x_range_bin = np.log10(x_range)
@@ -94,8 +105,59 @@ def make_scatterplot(x, y, axis, **kwargs):
         x_range_bin = x_range
         y_range_bin = y_range
 
-    if contours == True:
-        # then make the density or contour plot
+
+    if scatter:
+        # first do the scatter plot to incorporate outliers
+        if density == True:
+            # taken from: 
+            # https://stackoverflow.com/questions/20105364/how-can-i-make-a-scatter-plot-colored-by-density-in-matplotlib
+            from scipy.stats import gaussian_kde
+            # Calculate the point density
+            if logscale == True:
+                mask = (x != 0) & (y != 0)
+                x = x[mask]
+                y = y[mask]
+                xy = np.vstack([np.log10(x),np.log10(y)])
+            else:
+                #check also for nan
+                mask = np.isfinite(x) & np.isfinite(y)
+                x = x[mask]
+                y = y[mask]
+                xy = np.vstack([x,y])
+            
+            z = gaussian_kde(xy)(xy)
+
+            # Sort the points by density, so that the densest points are plotted last
+            idx = z.argsort()
+            x, y, z = x[idx], y[idx], z[idx]
+
+            axis.scatter(x, y, c=z, s=msize, edgecolor='', rasterized=rasterized, cmap=cmap, **kwargs)
+        else:
+            axis.scatter(x, y, c=color, s=msize, rasterized=rasterized, cmap=cmap, **kwargs)
+
+    else:
+        # make a binned density plot
+        hist, xe, ye, num = binned_statistic_2d(x_to_bin, y_to_bin, np.ones_like(x_to_bin), statistic='sum', bins=bins,
+                                            range=[[x_range_bin[0], x_range_bin[1]], [y_range_bin[0], y_range_bin[1]]])
+        x_width = (xe[1] - xe[0])
+        x_cen = xe[1:] - x_width / 2.
+        y_width = (ye[1] - ye[0])
+        y_cen = ye[1:] - y_width / 2.
+
+        cmap = matplotlib.cm.cubehelix
+
+        X, Y = np.meshgrid(xe, ye)
+        mask = np.where(hist < cmin)
+        hist[mask] = np.nan
+
+        im = axis.pcolormesh(10**X, 10**Y, np.log10(hist).T, cmap=cmap, rasterized=rasterized, **kwargs)
+       
+        if colorbar:
+            plt.colorbar(im, ax=axis, orientation='vertical', label=r'$\log\left(N_{\rm gal}\right)$')
+
+
+    if contours:
+        # add contours
         hist, xe, ye, num = binned_statistic_2d(x_to_bin, y_to_bin, np.ones_like(x_to_bin), statistic='sum', bins=bins,
                                             range=[[x_range_bin[0], x_range_bin[1]], [y_range_bin[0], y_range_bin[1]]])
         x_width = (xe[1] - xe[0])
@@ -117,145 +179,96 @@ def make_scatterplot(x, y, axis, **kwargs):
 
         axis.clabel(cont, inline=True, fontsize=f_size)
 
-    elif density == True:
-        # then make the density or contour plot
-        hist, xe, ye, num = binned_statistic_2d(x_to_bin, y_to_bin, np.ones_like(x_to_bin), statistic='sum', bins=bins,
-                                            range=[[x_range_bin[0], x_range_bin[1]], [y_range_bin[0], y_range_bin[1]]])
-        x_width = (xe[1] - xe[0])
-        x_cen = xe[1:] - x_width / 2.
-        y_width = (ye[1] - ye[0])
-        y_cen = ye[1:] - y_width / 2.
 
-        # how do we get the values for particles in bins with lower than cmin parts per bin?
+    if add_mean:
 
-        # cmap = kwargs.get('cmap','inferno')
-        # cmap = sns.palplot(sns.color_palette("Blues"))
-        cmap = sns.cubehelix_palette(light=1, as_cmap=True)
-        cmap = sns.light_palette('blue', as_cmap=True)
+    	med, med_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range_bin)
+        bin_width = (med_xe[1] - med_xe[0])
+        bin_center = med_xe[1:] - bin_width / 2.
 
-        X, Y = np.meshgrid(xe, ye)
+        p_low, pl_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_low, range=x_range_bin)
+        p_high, ph_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_high, range=x_range_bin)
 
-        mask = np.where(hist < cmin)
-        hist[mask] = np.nan
-
-        im = axis.pcolormesh(10**X, 10**Y, np.log10(hist).T, cmap=cmap, rasterized=rasterized, **kwargs)
-        # im = sns.kdeplot(10**X,10**Y, cmap=cmap, shade=True);
-
-        # im = axis.imshow(np.log10(hist).T, origin='lower', extent=[x_range[0],x_range[1],y_range[0],y_range[1]])#, origin='lower')
-        # im = axis.imshow(np.log10(hist).T, extent=[x_range[0],x_range[1],y_range[0],y_range[1]], origin='lower',cmap=cmap,
-        #   rasterized=rasterized, **kwargs)
-        # h, xe, ye, im = axis.hist2d(x_to_bin, y_to_bin, bins = bins, cmin=cmin, zorder=2, norm=LogNorm(),
-        # rasterized=rasterized, **kwargs)
-        # else:
-        # h, xe, ye, im = axis.hist2d(x, y, bins = bins, cmin=cmin, zorder=2, norm=LogNorm(),
-        # rasterized=rasterized, **kwargs)
-        if colorbar == True:
-            plt.colorbar(im, ax=axis, orientation='vertical', label=r'$\log\left(N_{\rm gal}\right)$')
-
-    if add_mean == True:
-        from scipy.stats import binned_statistic
-
-        if logscale == True:
-            hist, xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range_bin)
-            bin_width = (xe[1] - xe[0])
-            bin_center = xe[1:] - bin_width / 2.
+        if logscale:
             axis.plot(10**bin_center, 10**hist, color=mean_color, lw=lw, zorder=10)
-
-            hist, xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_low, range=x_range_bin)
-            axis.plot(10**bin_center, 10**hist, color=mean_color, lw=lw, ls='dashed', zorder=10)
-            hist, xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_high, range=x_range_bin)
-            axis.plot(10**bin_center, 10**hist, color=mean_color, lw=lw, ls='dashed', zorder=10)
+            axis.plot(10**bin_center, 10**p_low, color=mean_color, lw=lw, ls='dashed', zorder=10)
+            axis.plot(10**bin_center, 10**p_high, color=mean_color, lw=lw, ls='dashed', zorder=10)
         else:
-            hist, xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range)
-            bin_width = (xe[1] - xe[0])
-            bin_center = xe[1:] - bin_width / 2.
             axis.plot(bin_center, hist, color=mean_color, lw=lw, zorder=10)
-            hist, xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_low, range=x_range_bin)
-            axis.plot(10**bin_center, 10**hist, color=mean_color, lw=lw, ls='dashed', zorder=10)
-            hist, xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_high, range=x_range_bin)
-            axis.plot(10**bin_center, 10**hist, color=mean_color, lw=lw, ls='dashed', zorder=10)
+            axis.plot(bin_center, p_low, color=mean_color, lw=lw, ls='dashed', zorder=10)
+            axis.plot(bin_center, p_high, color=mean_color, lw=lw, ls='dashed', zorder=10)
 
-    if x_range != None:
+
+    if x_range:
         axis.set_xlim(x_range)
         axis.set_ylim(y_range)
+
+
+    if filename:
+        if rasterized:
+            dpi = kwargs.get('dpi', 600)
+            plt.savefig(filename, bbox_inches='tight', dpi=dpi)
+        else:
+            plt.savefig(filename, bbox_inches='tight')
 
     return axis
 
 
-def scatter_plot(x, y, filename='mstar_Z.pdf', axis=None, add_mean=False, mean_color=None,
-                 bins=100, scatter_alpha=None, **kwargs):
-    '''Plot a scatter plot of two properties x, y where for high density regions a 2d histogram is plotted and 
-    outliers are plotted as a scatter plot.
-
-    x, y: x and y data to be plotted
-
-    filename: name to save the plot. If not given, the axis object is returned.
-
-    axis: if provided, the data is plotted into this object, otherwise a new axis object is created.
-
-    add_mean: if True, a line for the mean relation in the color mean_color is added.
-
-    contours: if True instead of density plot only contours are plotted.
-
-    bins: number of bins to use
-
-    cmin: minimum number of counts in bin
-
-    optional arguments:
-
-    num_cont: number of contour levels
-
-    cont_colors: color of contours
-
-    fontsize: fontsize for contours
-
-    cmap: colormap for the density plot
-
-    xlabel: x axis label
-
-    ylabel: y axis label
-
-    logscale: default True, if not linear scale mostly used for the binning of data for the density plots.
+def plot_property_vs_mhalo(survey, filename='prop_vs_mhalo.pdf', add_mean=False, mean_color=None, **kwargs):
     '''
+    Plot the properties vs the true halo mass for all properties.
+
+    Input:
+
+    	survey: survey object
+
+    	filename: filename to save the figure. If None, no figure is saved.
+
+    	add_mean: bool, if True, a line for the mean is added.
+
+    	mean_color: line color for the mean line.
+
+    Return:
+
+    	axis object containing the figure.
+    '''
+
+    label = {'stars_Masses': r'$M_{\rm star}$ [$M_{\odot}$]', 'gas_Masses': r'$M_{\rm gas}$ [$M_{\odot}$]', 'stars_GFM_Metallicity': r'$Z_{\rm star}$',
+             'gas_GFM_Metallicity': r'$Z_{\rm gas}$', 'gas_GFM_StellarFormationTime': r'stellar age [Gyr]'}  # dictionary for axis labels
 
     from scipy.stats import binned_statistic
 
-    x_label = kwargs.pop('xlabel', r'$M_{\rm star}$ [$M_{\odot}$]')
-    y_label = kwargs.pop('ylabel', r'$Z$')
-    x_range = kwargs.get('x_range', (0, 15))
-    y_range = kwargs.get('y_range', (0, 15))
-    add_mean = kwargs.pop('add_mean', True)
-    y_label = kwargs.pop('y_label', None)
-
-    if axis == None:
-        fig = plt.figure()
-        axis = plt.subplot(111)
+    keys = [key for key in survey['galaxy'][0].properties.keys() if key not in ['Galaxy_id', 'psize', 'dm_mass']]
 
     rasterized = kwargs.get('rasterized', True)
-    logscale = kwargs.get('logscale', True)
+    x_range = kwargs.pop('x_range', [(0, 15)])
+    y_range = kwargs.pop('y_range', [(0, 15)] * len(keys))
 
-    print('Plotting all galaxies!')
+    fig = plt.figure(figsize=(3, 21))
+    axis = []
+    gs = gridspec.GridSpec(len(keys), 1)
+    gs.update(wspace=.0, hspace=0.1)  # set the spacing between axes.
 
-    _ = make_scatterplot(x, y, axis, bins=bins, alpha=scatter_alpha, mean_color=mean_color, **kwargs)
+    for i, key in enumerate(keys):
+    	axis.append(plt.subplot(gs[i]))
+       	axis[i].set_xscale('log')
+       	axis[i].set_yscale('log')
+    
+    	if key in label.keys():    
+            axis[i].set_ylabel(label[key])
+        else:
+        	axis[i].set_ylabel(key)
 
-#    if add_mean == True:
-#        if logscale == True:
-#            hist, xe, num = binned_statistic(np.log10(x), y, statistic=np.mean, range=np.log10(x_range))
-#            bin_width = (xe[1] - xe[0])
-#            bin_center = xe[1:] - bin_width / 2.
-#            axis.plot(10**bin_center, hist, color=mean_color, lw=2, zorder=10)
-#        else:
-#            hist, xe, num = binned_statistic(np.asarray(x), np.asarray(y), statistic=np.mean, range=x_range)
-#            bin_width = (xe[1] - xe[0])
-#            bin_center = xe[1:] - bin_width / 2.
-#            axis.plot(bin_center, hist, color=mean_color, lw=2, zorder=10)
+    	_ = picaaso_plot(dm_arr, np.asarray(prop_arr[key]), axis[i], x_range=x_range, y_range=y_range[i], **kwargs)
 
-    axis.set_xlabel(x_label)
-    axis.set_ylabel(y_label)
-    axis.set_xscale('log')
-    axis.set_yscale('log')
-    axis.set_xlim(x_range)
-    axis.set_ylim(y_range)
+
+        if add_mean:
+            hist, xe, num = binned_statistic(np.asarray(dm_arr), np.asarray(prop_arr[key]), statistic=np.mean)
+            bin_width = (xe[1] - xe[0])
+            bin_center = xe[1:] - bin_width / 2.
+            axis[i].plot(bin_center, hist, color=mean_color, lw=2, zorder=10)
+    
+    axis[-1].set_xlabel(r'$M_{\rm halo}$ [$M_{\odot}$]')  
 
     if filename:
         if 'rasterized':
@@ -267,43 +280,59 @@ def scatter_plot(x, y, filename='mstar_Z.pdf', axis=None, add_mean=False, mean_c
     return axis
 
 
+#######################################
+# make sure, we make this as flexible as possible...
+#######################################
+# we might as well add another plot function which does analysis and plotting in one go calling the function below for plotting...
+
 def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_true.pdf', axis=None,
                            add_unity=False, contours=False, cmin=2, **kwargs):
-    '''Plot the predicted vs true properties for all properties.
+    '''
+    Plot a set of predictions vs. their true values as they are passed in via the two dictionaries true_prop_arr, pred_prop_arr.
+	
+	Input:
 
-    true_prop_arr: array containing the true data, can be for a single property or for several properties.
+    	true_prop_arr: dictionary containing the true data, can be for a single property or for several properties.
 
-    path_predicted: predicted data. Assumption is that for prediction the same data format as for true data is used.
+    	pred_prop_arr: dictionary containing the predicted data, should be of same shape as true_prop_arr.
+	
+		filename: filename to save the figure. If None, no figure is saved.
 
-    contours: if True instead of density plot only contours are plotted.
+		axis: if provided, the data is plotted into this object, otherwise a new axis object is created.
 
-    cmin: minimum number of counts in bin
+		add_unity: bool to decide if a 0ne-to-one line should be plotted
 
     optional arguments:
 
-    bins: number of bins to use
+    	contours: if True instead of density plot only contours are plotted.
 
-    num_cont: number of contour levels
+    	cmin: minimum number of counts in bin
 
-    cont_colors: color of contours
+    	bins: number of bins to use
 
-    fontsize: fontsize for contours
+    	num_cont: number of contour levels
 
-    cmap: colormap for the density plot
+    	cont_colors: color of contours
 
-    xlabel: x axis label
+    	fontsize: fontsize for contours
 
-    ylabel: y axis label
+    	cmap: colormap for the density plot
 
-    logscale: default True, if not linear scale 
+    	xlabel: x axis label
+
+   		ylabel: y axis label
+
+    	logscale: default True, if not linear scale 
+
+    Return:
+
+    	axis object containing the figure.
     '''
 
-    from scipy.stats import binned_statistic
-
     rasterized = kwargs.get('rasterized', True)
-    plot_keys = kwargs.pop('plot_keys', ['gas_GFM_Metallicity', 'gas_Masses', 'gas_NeutralHydrogenAbundance',
-                                         'gas_StarFormationRate', 'stars_GFM_Metallicity', 'stars_GFM_StellarFormationTime', 'stars_Masses'])
+    plot_keys = true_prop_arr.keys
 
+    assert(plot_keys == pred_prop_arr.keys)
     #keys = list(pred_prop_arr.keys())
 
     x_range = kwargs.pop('x_range', [(0, 15)] * len(plot_keys))
@@ -580,59 +609,79 @@ def plot_MSE_per_channel(path_true, path_predicted, filename='MSE_per_property.p
     return axis
 
 
-def plot_property_vs_mhalo(prop_arr, dm_arr, filename='prop_vs_mhalo.pdf', axis=None, add_mean=False, mean_color=None, **kwargs):
-    '''Plot the properties vs the true halo mass for all properties.
-    '''
 
-    label = {'stars_Masses': r'$M_{\rm star}$ [$M_{\odot}$]', 'gas_Masses': r'$M_{\rm gas}$ [$M_{\odot}$]', 'stars_GFM_Metallicity': r'$Z_{\rm star}$',
-             'gas_GFM_Metallicity': r'$Z_{\rm gas}$', 'gas_GFM_StellarFormationTime': r'stellar age [Gyr]'}  # dictionary for axis labels
-    prop_to_scale = {'stars_Masses': 'Masses', 'gas_Masses': 'Masses', 'stars_GFM_Metallicity': 'stars_Masses',
-                     'gas_GFM_Metallicity': 'gas_Masses', 'gas_GFM_StellarFormationTime': 'GFM_StellarFormationTime'}  # dictionary for scaling
+##########################################################################################################################
+#plotting functions
 
-    from scipy.stats import binned_statistic
 
-    keys = list(prop_arr.keys())
+#############################################################################################################
+#                                    plots                                                                  #
+#############################################################################################################
 
-    rasterized = kwargs.get('rasterized', True)
-    x_range = kwargs.pop('x_range', [(0, 15)])
-    y_range = kwargs.pop('y_range', [(0, 15)] * len(keys))
 
-    if axis == None:
 
-        fig = plt.figure(figsize=(3, 21))
-        axis = []
-        gs = gridspec.GridSpec(len(keys), 1)
-        gs.update(wspace=.0, hspace=0.1)  # set the spacing between axes.
 
-        for i, key in enumerate(keys):
-            axis.append(plt.subplot(gs[i]))
-            axis[i].set_ylabel(key)
-            axis[i].set_xscale('log')
-            axis[i].set_yscale('log')
+#############################################################################################################
+#                                    Do the plots                                                           #
+#############################################################################################################
 
-    for i, key in enumerate(keys):
-        if key in label.keys():
-            # need to scale the values to physical units... maybe create a separate file?
-            _ = make_scatterplot(dm_arr, np.asarray(prop_arr[key]), axis[
-                                 i], x_range=x_range, y_range=y_range[i], **kwargs)
-            axis[i].set_ylabel(label[key])
+if __name__ == '__main__':
 
-    if add_mean == True:
-        # keys should exist from the last loop
-        for i, key in enumerate(keys):
 
-            hist, xe, num = binned_statistic(np.asarray(dm_arr), np.asarray(prop_arr[key]), statistic=np.mean)
-            bin_width = (xe[1] - xe[0])
-            bin_center = xe[1:] - bin_width / 2.
-            axis[i].plot(bin_center, hist, color=mean_color, lw=2, zorder=10)
+    # for t in [5000, 20000, 50000, 130000]:
+    for t in [100000]:
 
-    axis[-1].set_xlabel(r'$M_{\rm halo}$ [$M_{\odot}$]')
+        path_predicted = f'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/prediction/val_{t}/'
+        path_true = f'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/'
 
-    if filename:
-        if 'rasterized':
-            dpi = kwargs.get('dpi', 600)
-            plt.savefig(filename, bbox_inches='tight', dpi=dpi)
-        else:
-            plt.savefig(filename, bbox_inches='tight')
+        print("Plotting the mass metallicity relation for stars.")
+        # first the stars...
+        # plot true
+        mstar_true, Z_true = get_data(path_true, x_key='stars_Masses', y_key='stars_GFM_Metallicity', filename=f'{path_true}/mstar_Z_stars_true.h5')
+        mstar_pred, Z_pred = get_data(path_predicted, x_key='stars_Masses', y_key='stars_GFM_Metallicity', filename=f'{path_predicted}/mstar_Z_stars_pred.h5')
+        ax = scatter_plot(mstar_true, Z_true, filename=None, axis=None, add_mean=True,
+                          mean_color='cyan', contours=False, color='k', bins=(25, 25), colorbar=False, cmin=5, x_range=(1e10, 1e12),
+                          y_range=(1e2, 1e4), scatter_alpha=0.5)
+        # plot predicted
+        scatter_plot(mstar_pred, Z_pred, filename=f'{path_predicted}/mstar_Z.png', axis=ax, add_mean=True, mean_color='darkmagenta', color='r',
+                     contours=False, density=False, bins=(25, 25), cmin=5, ylabel=r'$M_Z^{\rm star} / M_{\rm tot}^{\rm star}$', x_range=(1e10, 3e11), y_range=(2e-3, 1e-1), scatter_alpha=0.5)
+        print("Plotting the mass metallicity relation for gas.")
+        # then the gas...
+        # plot true
+        mstar_true, Z_true = get_data(path_true, x_key='stars_Masses', y_key='gas_GFM_Metallicity', filename=f'{path_true}/mstar_Z_gas_true.h5')
+        mstar_pred, Z_pred = get_data(path_predicted, x_key='stars_Masses', y_key='gas_GFM_Metallicity', filename=f'{path_predicted}/mstar_Z_gas_pred.h5')
+        ax = scatter_plot(mstar_true, Z_true, filename=None, axis=None, add_mean=True, mean_color='cyan', contours=False, color='k',
+                          bins=15, colorbar=False, cmin=5, x_range=(1e10, 1e12), y_range=(1e-5, 1e1), scatter_alpha=0.5)
+        # plot predicted
+        scatter_plot(mstar_pred, Z_pred, filename=f'{path_predicted}/mstar_Z_gas.png', axis=ax, add_mean=True, mean_color='darkmagenta', contours=False,
+                     bins=15, cmin=5, density=False, color='r', ylabel=r'$M_Z^{\rm gas} / M_{\rm tot}^{\rm gas}$', x_range=(1e10, 5e11), y_range=(1e-9, 1e-5), scatter_alpha=0.5)
+        print("Plotting stellar mass vs gas fraction.")
+        mstar_true, mgas_true = get_data(path_true, x_key='stars_Masses', y_key='gas_Masses', filename=f'{path_true}/mstar_mgas_true.h5')
+        mstar_pred, mgas_pred = get_data(path_predicted, x_key='stars_Masses', y_key='gas_Masses', filename=f'{path_predicted}/mstar_mgas_pred.h5')
+        ax = scatter_plot(mstar_true, mgas_true / (mstar_true + mgas_true), filename=None, axis=None, add_mean=True, mean_color='cyan', contours=False,
+                          bins=25, colorbar=False, cmin=5, color='k', x_range=(1e10, 1e12), y_range=(1e-7, 1e1), scatter_alpha=0.5)
+        # plot predicted
+        scatter_plot(mstar_pred, mgas_pred / (mgas_pred + mstar_pred), filename=f'{path_predicted}/mstar_gas_frac.png', axis=ax, add_mean=True, mean_color='darkmagenta', contours=False,
+                     bins=25, cmin=5, density=False, color='r', ylabel=r'$M_{\rm gas}/(M_{\rm star}+M_{\rm gas})$', x_range=(1e10, 3e11), y_range=(1e-7, 1e-2), scatter_alpha=0.5)
+        print("Plotting the stellar mass vs the gas mass.")
+        ax = scatter_plot(mstar_true, mgas_true, filename=None, axis=None, add_mean=True, mean_color='cyan', contours=False,
+                          bins=25, colorbar=False, cmin=5, color='k', x_range=(1e10, 1e12), y_range=(1e3, 1e9), scatter_alpha=0.5)
+        # plot predicted
+        scatter_plot(mstar_pred, mgas_pred, filename=f'{path_predicted}/mstar_mgas.png', axis=ax, add_mean=True, mean_color='darkmagenta', contours=False,
+                     bins=25, density=False, cmin=5, color='r', ylabel=r'$M_{\rm gas}$ [$M_{\odot}$]', x_range=(1e10, 3e11), y_range=(3e4, 1e8), scatter_alpha=0.5)
+        print("Plotting predicted vs true properties.")
+        plot_keys = ['gas_GFM_Metallicity', 'gas_Masses', 'gas_NeutralHydrogenAbundance', 'gas_StarFormationRate',
+                     'stars_GFM_Metallicity', 'stars_GFM_StellarFormationTime', 'stars_Masses']
+        x_range = [(7e-3, 5e-1), (6e-5, 5e-3), (1e-4, 4e1), (1e-7, 1e-3), (8e1, 5e3), (6e3, 8e4), (1, 1.5e1)]
+        true_prop_arr, pred_prop_arr, dm_arr = get_predicted_vs_true_data(path_true, path_predicted, filename=f'{path_predicted}/predicted_vs_true.h5', dm_file='illustris_fof_props.h5')
+        plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename=f'{path_predicted}/predicted_vs_true.png', axis=None,
+                               add_unity=True, contours=False, density=False, bins=50, cmin=2, plot_keys=plot_keys, x_range=x_range, y_range=x_range)
+        print("Plotting the properties vs the true halo mass.")
 
-    return axis
+        y_range = [(7e-3, 5e-1), (6e-5, 5e-3), (1e-4, 4e1), (1e-7, 1e-3), (8e1, 5e3), (6e3, 8e4), (1, 1.5e1)]
+        x_range = (1e9, 1e14)
+
+        ax = plot_property_vs_mhalo(true_prop_arr, dm_arr, filename=None, axis=None, add_mean=True, mean_color='cyan', contours=False,
+                                    bins=50, cmin=2, x_range=x_range, y_range=y_range)
+        plot_property_vs_mhalo(pred_prop_arr, dm_arr, filename=f'{path_predicted}/prop_vs_mhalo.png',
+                               axis=ax, add_mean=True, mean_color='darkmagenta', contours=False, bins=50, cmin=2, x_range=x_range, y_range=y_range)

@@ -31,6 +31,7 @@ import types
 import math
 import h5py
 
+from picasso.analysis import image_tools
 
 class MultiFileManager(object) :
     _suffix = '_physical_data.h5'
@@ -48,8 +49,9 @@ class MultiFileManager(object) :
             self._numfiles = len(self._filenames)
 
     def __iter__(self):
-        self.idx = 0
-        return h5py.File(self._filenames[self.idx], self._mode) # is it a good idea to open all galaxy files?
+        for i in range(self._numfiles):
+            self.idx = i
+            yield h5py.File(self._filenames[self.idx], self._mode) # is it a good idea to open all galaxy files?
 
     def __next__(self):
         if self.idx <= self._numfiles:
@@ -78,6 +80,8 @@ class MultiFileManager(object) :
         if mode!=self._mode:
             self._mode = mode
 
+
+#should we add a function/method to create the galaxy images from illustris or leave that as a seperate script as is now?
 
 class SDSSMockSurvey(Survey):
     # decide later which are basic loadables...
@@ -135,6 +139,7 @@ class SDSSMockSurvey(Survey):
 
     def __init_family_map(self):
         family_slice_start = 0
+        #here we could use some scikit stuff to split the survey into train, test, val and then save this split in the survey folder.
 
         # assumption below is that true properties exist for all the survey and prediction and validation are disjoint.
         # thus slicing will be possible by first loading the disjoint galaxies into memory and then later all galaxies not loaded...
@@ -215,7 +220,7 @@ class SDSSMockSurvey(Survey):
             raise IOError("No such array on disk")
         else:
 
-            dtype, dy, units = self.__get_dtype_dims_and_units(fam, array_name) 
+            dtype, dy = self.__get_dtype_dims_and_units(fam, array_name) 
 
             if fam is None:
                 target = self
@@ -236,8 +241,12 @@ class SDSSMockSurvey(Survey):
                         tmp_arr.append(SDSSMockGalaxy(self._files[_file_idx]))
                     else:
                         #if we do not ask for the galaxy itself, load the "postprocessed" array
-                        #tmp_arr.append(self._files[file_idx][array_name].value)     
-                        raise NotImplementedError()
+                        #tmp_arr.append(self._files[file_idx][array_name].value)   
+                        tmp_arr.append(self['galaxy'].properties[array_name])  
+                        #raise NotImplementedError("Sorry, this feature is not implemented yet.")
+                        # Do we actually need to construct any other survey arrays except for the galaxies objects themselves? 
+                        # maybe in some cases it migth be useful to have the DM mass or the Galaxy ID directly accessable...
+                        # could think oif making this arrays of total stellar mass, etc... or do we need to get an array of galaxy images?
 
                 target_array = self[loading_fam][array_name]
                 assert target_array.size == np.asarray(tmp_arr).size
@@ -251,7 +260,7 @@ class SDSSMockSurvey(Survey):
             # we deal with galaxy objects
             dtype = object
             dy = 1
-            inferred_units = None
+            #inferred_units = None
         else:
             
             #if fam is None:
@@ -261,7 +270,8 @@ class SDSSMockSurvey(Survey):
             representative_hdf = None
             # not all arrays are present in all hdfs so need to loop
             # until we find one
-            for hdf0 in self._hdf_files:
+            # needs modification to work with images as array entries...
+            for hdf0 in self._files:
                 try:
                     representative_dset = hdf0[translated_name]
                     #if hasattr(hdf0, "psize"):
@@ -278,13 +288,13 @@ class SDSSMockSurvey(Survey):
             assert len(representative_dset.shape) <= 2 
 
             if len(representative_dset.shape) > 1:
-                dy = representative_dset.shape[1] # here we deal with images...
+                dy = representative_dset.shape # here we deal with images...
             else:
                 dy = 1
 
             dtype = representative_dset.dtype
 
-        return dtype, dy, inferred_units
+        return dtype, dy#, inferred_units
 
     @classmethod
     def _test_for_hdf5_key(cls, f):
@@ -328,6 +338,9 @@ def do_properties(survey):
     except KeyError:
         survey.properties['image_res'] = np.nan
 
+# when finally dealing with real observartions, we can add further properties here...
+
+
 #    # not all omegas need to be specified in the attributes
 #    try:
 #        sim.properties['omegaB0'] = atr['OmegaBaryon']
@@ -356,10 +369,27 @@ def do_properties(survey):
 ## We have some internally derive quantities...
 
 #add all quantities, such as the stellar mass in half mass radius, the photutils isocontours when we have a working survey object...
+# So far there is a key error here...
 @SDSSMockSurvey.derived_quantity
 def total_star_mass(self) :
+    tmp = [np.sum(x.properties['stars_Masses']) for x in self['galaxy']]
+    return np.asarray(tmp)
 
-    return np.sum(self['stars_Masses'])
+@SDSSMockSurvey.derived_quantity
+def geom(self):
+    """ ellipse geometry fitted to mass map """
+    return image_tools.fit_image(self)
+
+@SDSSMockSurvey.derived_quantity
+def iso_dict(self):
+    """ dictionary of available iso contours """
+    return image_tools.get_isolists(self,self['geom'])
+
+@SDSSMockSurvey.derived_quantity
+def M2Rh(self):
+    """Mass within 2 R_half """
+    value, _ = image_tools.get_pixel_sum(self['iso_dict'],'stars_Masses',50)
+    return value
 
 
 
