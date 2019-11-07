@@ -51,18 +51,18 @@ class MultiFileManager(object) :
     def __iter__(self):
         for i in range(self._numfiles):
             self.idx = i
-            yield h5py.File(self._filenames[self.idx], self._mode) # is it a good idea to open all galaxy files?
+            yield self._filenames[self.idx]
 
     def __next__(self):
         if self.idx <= self._numfiles:
-            file = h5py.File(self._filenames[self.idx], self._mode)
+            file = self._filenames[self.idx]
             self.idx += 1
             return file
         else:
             raise StopIteration
 
     def __getitem__(self, i) :
-        return h5py.File(self._filenames[i], self._mode)
+        return self._filenames[i]
 
     def has_file(self, filename):
         if self._path in filename:
@@ -168,8 +168,9 @@ class SDSSMockSurvey(Survey):
             tmp_file = self._file_map[fam][0] #first file in family
             
             _file_idx = self._files.get_file_idx(tmp_file)
-            for this_key in self._files[_file_idx].keys():
-                self._loadable_family_keys[fam].add(this_key)
+            with h5py.File(self._files[_file_idx], self._files._mode) as f: 
+                for this_key in f.keys():
+                    self._loadable_family_keys[fam].add(this_key)
             self._loadable_family_keys[fam] = list(self._loadable_family_keys[fam]) 
 
         self._loadable_keys = set(self._loadable_family_keys[all_fams[0]])
@@ -212,7 +213,8 @@ class SDSSMockSurvey(Survey):
             
                 target_array_this = target_array[_file_idx] #assumption is still we preserve the order in arrays and files on disk
 
-                self._files[file_idx].create_dataset(array_name, data=target_array_this)
+                with h5py.File(self._files[_file_idx], self._files._mode) as f: 
+                    f.create_dataset(array_name, data=target_array_this)
 
 
     def _load_array(self, array_name, fam=None):
@@ -238,7 +240,8 @@ class SDSSMockSurvey(Survey):
                     _file_idx = self._files.get_file_idx(file)
                     if array_name == "galaxy":
                         #instantiate the galaxy object
-                        tmp_arr.append(SDSSMockGalaxy(self._files[_file_idx]))
+                        with h5py.File(self._files[_file_idx], self._files._mode) as f: 
+                            tmp_arr.append(SDSSMockGalaxy(f))
                     else:
                         #if we do not ask for the galaxy itself, load the "postprocessed" array
                         #tmp_arr.append(self._files[file_idx][array_name].value)   
@@ -271,15 +274,16 @@ class SDSSMockSurvey(Survey):
             # not all arrays are present in all hdfs so need to loop
             # until we find one
             # needs modification to work with images as array entries...
-            for hdf0 in self._files:
+            for file in self._files:
                 try:
-                    representative_dset = hdf0[translated_name]
-                    #if hasattr(hdf0, "psize"):
-                    #    inferred_units = hdf0[psize] #do something
+                    with h5py.File(file, self._files._mode) as hdf0:
+                        representative_dset = hdf0[translated_name]
+                        #if hasattr(hdf0, "psize"):
+                        #    inferred_units = hdf0[psize] #do something
 
-                    if len(representative_dset)!=0:
-                        # suitable for figuring out everything we need to know about this array
-                        break
+                        if len(representative_dset)!=0:
+                            # suitable for figuring out everything we need to know about this array
+                            break
                 except KeyError:
                     continue
             if representative_dset is None:

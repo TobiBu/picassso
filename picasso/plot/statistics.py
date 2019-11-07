@@ -24,44 +24,44 @@ def perc_high(x):
     return np.percentile(x,84)
 
 def picasso_plot(x, y, axis, **kwargs):
-	'''
-	Make a scatter or respective density plot of two properties x, y where for high density regions a 2d histogram is plotted and 
+    '''
+    Make a scatter or respective density plot of two properties x, y where for high density regions a 2d histogram is plotted and 
     outliers are plotted as a scatter plot.
 
-	Input:
- 	   x, y: x and y data to be plotted	
+    Input:
+       x, y: x and y data to be plotted 
 
-	    filename: name to save the plot. If not given, the axis object is returned.	
+        filename: name to save the plot. If not given, the axis object is returned. 
 
-	    axis: if provided, the data is plotted into this object, otherwise a new axis object is created.	
+        axis: if provided, the data is plotted into this object, otherwise a new axis object is created.    
 
-	    add_mean: if True, a line for the mean relation in the color mean_color is added.	
+        add_mean: if True, a line for the mean relation in the color mean_color is added.   
 
-	    contours: if True instead of density plot only contours are plotted.	
+        contours: if True instead of density plot only contours are plotted.    
 
-	    bins: number of bins to use	
+        bins: number of bins to use 
 
-	    cmin: minimum number of counts in bin	
+        cmin: minimum number of counts in bin   
 
-	    optional arguments:	
+        optional arguments: 
 
-	    num_cont: number of contour levels	
+        num_cont: number of contour levels  
 
-	    cont_colors: color of contours	
+        cont_colors: color of contours  
 
-	    fontsize: fontsize for contours	
+        fontsize: fontsize for contours 
 
-	    cmap: colormap for the density plot	
+        cmap: colormap for the density plot 
 
-	    xlabel: x axis label	
+        xlabel: x axis label    
 
-	    ylabel: y axis label	
+        ylabel: y axis label    
 
-	    logscale: default True, if not linear scale mostly used for the binning of data for the density plots.
+        logscale: default True, if not linear scale mostly used for the binning of data for the density plots.
 
-	Return:
+    Return:
 
-		axis object containing the plot.
+        axis object containing the plot.
 
     '''
 
@@ -182,7 +182,7 @@ def picasso_plot(x, y, axis, **kwargs):
 
     if add_mean:
 
-    	med, med_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range_bin)
+        med, med_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range_bin)
         bin_width = (med_xe[1] - med_xe[0])
         bin_center = med_xe[1:] - bin_width / 2.
 
@@ -220,17 +220,17 @@ def plot_property_vs_mhalo(survey, filename='prop_vs_mhalo.pdf', add_mean=False,
 
     Input:
 
-    	survey: survey object
+        survey: survey object
 
-    	filename: filename to save the figure. If None, no figure is saved.
+        filename: filename to save the figure. If None, no figure is saved.
 
-    	add_mean: bool, if True, a line for the mean is added.
+        add_mean: bool, if True, a line for the mean is added.
 
-    	mean_color: line color for the mean line.
+        mean_color: line color for the mean line.
 
     Return:
 
-    	axis object containing the figure.
+        axis object containing the figure.
     '''
 
     label = {'stars_Masses': r'$M_{\rm star}$ [$M_{\odot}$]', 'gas_Masses': r'$M_{\rm gas}$ [$M_{\odot}$]', 'stars_GFM_Metallicity': r'$Z_{\rm star}$',
@@ -250,16 +250,16 @@ def plot_property_vs_mhalo(survey, filename='prop_vs_mhalo.pdf', add_mean=False,
     gs.update(wspace=.0, hspace=0.1)  # set the spacing between axes.
 
     for i, key in enumerate(keys):
-    	axis.append(plt.subplot(gs[i]))
-       	axis[i].set_xscale('log')
-       	axis[i].set_yscale('log')
+        axis.append(plt.subplot(gs[i]))
+        axis[i].set_xscale('log')
+        axis[i].set_yscale('log')
     
-    	if key in label.keys():    
+        if key in label.keys():    
             axis[i].set_ylabel(label[key])
         else:
-        	axis[i].set_ylabel(key)
+            axis[i].set_ylabel(key)
 
-    	_ = picaaso_plot(dm_arr, np.asarray(prop_arr[key]), axis[i], x_range=x_range, y_range=y_range[i], **kwargs)
+        _ = picaaso_plot(dm_arr, np.asarray(prop_arr[key]), axis[i], x_range=x_range, y_range=y_range[i], **kwargs)
 
 
         if add_mean:
@@ -289,44 +289,44 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
                            add_unity=False, contours=False, cmin=2, **kwargs):
     '''
     Plot a set of predictions vs. their true values as they are passed in via the two dictionaries true_prop_arr, pred_prop_arr.
-	
-	Input:
+    
+    Input:
 
-    	true_prop_arr: dictionary containing the true data, can be for a single property or for several properties.
+        true_prop_arr: dictionary containing the true data, can be for a single property or for several properties.
 
-    	pred_prop_arr: dictionary containing the predicted data, should be of same shape as true_prop_arr.
-	
-		filename: filename to save the figure. If None, no figure is saved.
+        pred_prop_arr: dictionary containing the predicted data, should be of same shape as true_prop_arr.
+    
+        filename: filename to save the figure. If None, no figure is saved.
 
-		axis: if provided, the data is plotted into this object, otherwise a new axis object is created.
+        axis: if provided, the data is plotted into this object, otherwise a new axis object is created.
 
-		add_unity: bool to decide if a 0ne-to-one line should be plotted
+        add_unity: bool to decide if a 0ne-to-one line should be plotted
 
     optional arguments:
 
-    	contours: if True instead of density plot only contours are plotted.
+        contours: if True instead of density plot only contours are plotted.
 
-    	cmin: minimum number of counts in bin
+        cmin: minimum number of counts in bin
 
-    	bins: number of bins to use
+        bins: number of bins to use
 
-    	num_cont: number of contour levels
+        num_cont: number of contour levels
 
-    	cont_colors: color of contours
+        cont_colors: color of contours
 
-    	fontsize: fontsize for contours
+        fontsize: fontsize for contours
 
-    	cmap: colormap for the density plot
+        cmap: colormap for the density plot
 
-    	xlabel: x axis label
+        xlabel: x axis label
 
-   		ylabel: y axis label
+        ylabel: y axis label
 
-    	logscale: default True, if not linear scale 
+        logscale: default True, if not linear scale 
 
     Return:
 
-    	axis object containing the figure.
+        axis object containing the figure.
     '''
 
     rasterized = kwargs.get('rasterized', True)

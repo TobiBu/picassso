@@ -6,6 +6,10 @@ def _get_basic_config():
 
     config = {'verbose': False}
 
+    config['families'] = {'training':"train, t, tr",'prediction':"p, pred, predict","validation":"val, v, valid"}
+
+    config['survey-class-priority'] = ['SDSSMockSurvey']#,'ClassicSurvey','MANGASurvey']
+
     return config
 
 
@@ -50,10 +54,6 @@ def configure_directories():
     config['pvt_file'] = pvt_file
     config['dm_file'] = dm_file
  
-    config['families'] = {'training':"train, t, tr",'prediction':"p, pred, predict","validation":"val, v, valid"}
-
-    config['survey-class-priority'] = ['SDSSMockSurvey']#,'ClassicSurvey','MANGASurvey']
-
 
 def configure_survey_loading_priority():
     from . import survey
@@ -67,5 +67,5 @@ def configure_survey_loading_priority():
 
 config = _get_basic_config()
 configure_physical_scaling()
-configure_directories()
+#configure_directories()
 configure_survey_loading_priority()
