@@ -23,7 +23,7 @@ def perc_low(x):
 def perc_high(x):
     return np.percentile(x,84)
 
-def picasso_plot(x, y, axis, **kwargs):
+def picasso_plot(x, y, axis, filename=None, **kwargs):
     '''
     Make a scatter or respective density plot of two properties x, y where for high density regions a 2d histogram is plotted and 
     outliers are plotted as a scatter plot.
@@ -73,8 +73,8 @@ def picasso_plot(x, y, axis, **kwargs):
     bins = kwargs.pop('bins', 50)
     cmin = kwargs.pop('cmin', 5)
     contours = kwargs.pop('contours', False)
-    x_range = kwargs.pop('x_range', None)
-    y_range = kwargs.pop('y_range', None)
+    x_range = kwargs.pop('x_range', [x.min(),x.max()]) 
+    y_range = kwargs.pop('y_range', [y.min(),y.max()])
     colorbar = kwargs.pop('colorbar', False)
     color = kwargs.pop('color', 'k')
     scatter = kwargs.pop('scatter', True)
@@ -87,7 +87,7 @@ def picasso_plot(x, y, axis, **kwargs):
     add_mean = kwargs.pop('add_mean', True)
     mean_color = kwargs.pop('mean_color', 'c')
     lw = kwargs.pop('lw',2)
-
+    filename = kwargs.pop('filename','predicted_vs_true.pdf')
 
     if not axis:
         fig = plt.figure()
@@ -181,7 +181,6 @@ def picasso_plot(x, y, axis, **kwargs):
 
 
     if add_mean:
-
         med, med_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range_bin)
         bin_width = (med_xe[1] - med_xe[0])
         bin_center = med_xe[1:] - bin_width / 2.
@@ -190,14 +189,14 @@ def picasso_plot(x, y, axis, **kwargs):
         p_high, ph_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_high, range=x_range_bin)
 
         if logscale:
-            axis.plot(10**bin_center, 10**hist, color=mean_color, lw=lw, zorder=10)
-            axis.plot(10**bin_center, 10**p_low, color=mean_color, lw=lw, ls='dashed', zorder=10)
-            axis.plot(10**bin_center, 10**p_high, color=mean_color, lw=lw, ls='dashed', zorder=10)
-        else:
-            axis.plot(bin_center, hist, color=mean_color, lw=lw, zorder=10)
-            axis.plot(bin_center, p_low, color=mean_color, lw=lw, ls='dashed', zorder=10)
-            axis.plot(bin_center, p_high, color=mean_color, lw=lw, ls='dashed', zorder=10)
-
+            bin_center = 10**bin_center
+            med = 10**med
+            p_low = 10**p_low
+            p_high = 10**p_high
+        
+        axis.plot(bin_center, med, color=mean_color, lw=lw, zorder=10)
+        axis.plot(bin_center, p_low, color=mean_color, lw=lw, ls='dashed', zorder=10)
+        axis.plot(bin_center, p_high, color=mean_color, lw=lw, ls='dashed', zorder=10)
 
     if x_range:
         axis.set_xlim(x_range)
@@ -261,7 +260,6 @@ def plot_property_vs_mhalo(survey, filename='prop_vs_mhalo.pdf', add_mean=False,
 
         _ = picaaso_plot(dm_arr, np.asarray(prop_arr[key]), axis[i], x_range=x_range, y_range=y_range[i], **kwargs)
 
-
         if add_mean:
             hist, xe, num = binned_statistic(np.asarray(dm_arr), np.asarray(prop_arr[key]), statistic=np.mean)
             bin_width = (xe[1] - xe[0])
@@ -285,7 +283,7 @@ def plot_property_vs_mhalo(survey, filename='prop_vs_mhalo.pdf', add_mean=False,
 #######################################
 # we might as well add another plot function which does analysis and plotting in one go calling the function below for plotting...
 
-def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_true.pdf', axis=None,
+def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_true.pdf', plot_keys=None ,axis=None,
                            add_unity=False, contours=False, cmin=2, **kwargs):
     '''
     Plot a set of predictions vs. their true values as they are passed in via the two dictionaries true_prop_arr, pred_prop_arr.
@@ -330,14 +328,15 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
     '''
 
     rasterized = kwargs.get('rasterized', True)
-    plot_keys = true_prop_arr.keys
 
-    assert(plot_keys == pred_prop_arr.keys)
-    #keys = list(pred_prop_arr.keys())
+    if not plot_keys:
+        plot_keys = [k for k in true_prop_arr.keys() if '_rad' not in k]
+
+    assert(len(plot_keys) <= len(true_prop_arr.keys()))
 
     x_range = kwargs.pop('x_range', [(0, 15)] * len(plot_keys))
     y_range = kwargs.pop('y_range', [(0, 15)] * len(plot_keys))
-    y_label = kwargs.pop('y_label', None)
+    y_label = kwargs.pop('y_label', plot_keys)
     figsize = kwargs.pop('figsize', (3, 21))
     xin_range = kwargs.pop('xin_range', [None] * len(plot_keys))
     msize = kwargs.pop('msize', 5)
@@ -371,7 +370,7 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
 
     for i, key in enumerate(plot_keys):
         print('Plotting predicted ' + key + ' vs. true ' + key)
-        _ = make_scatterplot(true_prop_arr[key], pred_prop_arr[key], axis[i], x_range=x_range[i], y_range=y_range[i], msize=msize, cmap=cmap, 
+        _ = picasso_plot(true_prop_arr[key], pred_prop_arr[key], axis[i], filename=None, x_range=x_range[i], y_range=y_range[i], msize=msize, cmap=cmap, 
             histtype=histtype, add_mean=add_mean, mean_color=mean_color, **kwargs)
 
         if i != len(plot_keys) - 1:

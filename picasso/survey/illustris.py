@@ -30,6 +30,7 @@ import copy
 import types
 import math
 import h5py
+from tqdm import tqdm
 
 from picasso.analysis import image_tools
 
@@ -236,7 +237,7 @@ class SDSSMockSurvey(Survey):
             for loading_fam in all_fams_to_load:
                 tmp_arr = []
                 
-                for file in self._file_map[loading_fam]:
+                for file in tqdm(self._file_map[loading_fam], ascii=True, dynamic_ncols=True):
                     _file_idx = self._files.get_file_idx(file)
                     if array_name == "galaxy":
                         #instantiate the galaxy object
@@ -335,12 +336,12 @@ def do_properties(survey):
     # do we have any gloabl propertie we want to set?...
     #raise RuntimeError("Not implemented")
 
-    test_file = survey._files[0]
-    # for mock images so far resolution is fixed
-    try:
-        survey.properties['image_res'] = test_file["stars_Masses"].value.shape[0]
-    except KeyError:
-        survey.properties['image_res'] = np.nan
+    with h5py.File(survey._files[0], "r") as  test_file:
+        # for mock images so far resolution is fixed
+        try:
+            survey.properties['image_res'] = test_file["stars_Masses"].value.shape[0]
+        except KeyError:
+            survey.properties['image_res'] = np.nan
 
 # when finally dealing with real observartions, we can add further properties here...
 
