@@ -19,6 +19,9 @@ def score(true_prop_arr, pred_prop_arr, score_type):
 
     if score_type == 'log_diff':
         score = np.log10(true_prop_arr) - np.log10(pred_prop_arr)
+    elif score_type == 'diff':
+        score = true_prop_arr - pred_prop_arr
+        
 
     return score
 

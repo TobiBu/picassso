@@ -59,6 +59,8 @@ def picasso_plot(x, y, axis, filename=None, **kwargs):
 
         logscale: default True, if not linear scale mostly used for the binning of data for the density plots.
 
+        logaxis: default False, if set, axis are displayed in logscale.
+
     Return:
 
         axis object containing the plot.
@@ -70,17 +72,18 @@ def picasso_plot(x, y, axis, filename=None, **kwargs):
 
     rasterized = kwargs.pop('rasterized', True)
     logscale = kwargs.pop('logscale', True)
+    logaxis = kwargs.pop('logaxis', False)
     bins = kwargs.pop('bins', 50)
     cmin = kwargs.pop('cmin', 5)
     contours = kwargs.pop('contours', False)
     x_range = kwargs.pop('x_range', [x.min(),x.max()]) 
     y_range = kwargs.pop('y_range', [y.min(),y.max()])
+    xlabel = kwargs.pop('xlabel', None)
+    ylabel = kwargs.pop('ylabel', None)
     colorbar = kwargs.pop('colorbar', False)
     color = kwargs.pop('color', 'k')
     scatter = kwargs.pop('scatter', True)
     density = kwargs.pop('density', False)
-    scatter_density = kwargs.pop('scatter_density', True)
-    y_label = kwargs.pop('y_label', None)
     msize = kwargs.pop('msize', 5)
     cmap = kwargs.pop('cmap', 'Spectral_r')
     histtype = kwargs.pop('histtype', 'bar')
@@ -92,7 +95,6 @@ def picasso_plot(x, y, axis, filename=None, **kwargs):
     if not axis:
         fig = plt.figure()
         axis = plt.subplot(111)
-
 
     if logscale:
         x_to_bin = np.log10(x)
@@ -181,12 +183,12 @@ def picasso_plot(x, y, axis, filename=None, **kwargs):
 
 
     if add_mean:
-        med, med_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range_bin)
+        med, med_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=np.median, range=x_range_bin, bins=bins)
         bin_width = (med_xe[1] - med_xe[0])
         bin_center = med_xe[1:] - bin_width / 2.
 
-        p_low, pl_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_low, range=x_range_bin)
-        p_high, ph_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_high, range=x_range_bin)
+        p_low, pl_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_low, range=x_range_bin, bins=bins)
+        p_high, ph_xe, num = binned_statistic(x_to_bin, y_to_bin, statistic=perc_high, range=x_range_bin, bins=bins)
 
         if logscale:
             bin_center = 10**bin_center
@@ -202,6 +204,14 @@ def picasso_plot(x, y, axis, filename=None, **kwargs):
         axis.set_xlim(x_range)
         axis.set_ylim(y_range)
 
+    if logaxis:
+        axis.set_xscale('log')
+        axis.set_yscale('log')
+
+    if xlabel:
+        axis.set_xlabel(xlabel)
+    if ylabel:
+        axis.set_ylabel(ylabel)
 
     if filename:
         if rasterized:
@@ -334,23 +344,22 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
 
     assert(len(plot_keys) <= len(true_prop_arr.keys()))
 
-    x_range = kwargs.pop('x_range', [(0, 15)] * len(plot_keys))
-    y_range = kwargs.pop('y_range', [(0, 15)] * len(plot_keys))
-    y_label = kwargs.pop('y_label', plot_keys)
-    figsize = kwargs.pop('figsize', (3, 21))
+    x_range = kwargs.pop('x_range', None) #[(0, 15)] * len(plot_keys))
+    y_range = kwargs.pop('y_range', None) #[(0, 15)] * len(plot_keys))
+    ylabel = kwargs.pop('ylabel', plot_keys)
+    figsize = kwargs.pop('figsize', (5, 5*len(plot_keys)))
     xin_range = kwargs.pop('xin_range', [None] * len(plot_keys))
     msize = kwargs.pop('msize', 5)
     cmap = kwargs.pop('cmap', 'Spectral_r')
     histtype = kwargs.pop('histtype', 'bar')
     add_mean = kwargs.pop('add_mean', True)
     mean_color = kwargs.pop('mean_color', 'c')
-    logscale = kwargs.get('logscale', True)
+    logscale = kwargs.get('logscale', False)
     inset = kwargs.pop('inset', True)
     inset_pos = kwargs.pop('inset_pos', 'low')
     #yin_range = kwargs.pop('yin_range', [None] * len(keys))
 
-    if axis == None:
-        
+    if not axis:
         fig = plt.figure(figsize=figsize)
         axis = []
         gs = gridspec.GridSpec(len(plot_keys), 1)
@@ -359,19 +368,34 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
         for i, key in enumerate(plot_keys):
             
             axis.append(plt.subplot(gs[i]))
-            if y_label != None:
-                axis[i].set_ylabel(y_label[i])
+            if ylabel != None:
+                axis[i].set_ylabel(ylabel[i], fontsize=20)
             else:
-                axis[i].set_ylabel(key)
+                axis[i].set_ylabel(key, fontsize=20)
             
             if logscale:
                 axis[i].set_xscale('log')
                 axis[i].set_yscale('log')
 
+    if not x_range:
+        x_range = [(np.nanmin(true_prop_arr[key][np.isfinite(true_prop_arr[key])])+1e-5,np.nanmax(true_prop_arr[key][np.isfinite(true_prop_arr[key])])) for key in plot_keys]
+        # this is maybe double checking if there is no inf or Nan inside the ranges but this way its save...
+        # we add 1 to the minimum to be save that we do not get zero... this wil give problems with the log_scale.
+
+    if not y_range:
+        y_range = [(np.nanmin(pred_prop_arr[key][np.isfinite(pred_prop_arr[key])])+1e-5,np.nanmax(pred_prop_arr[key][np.isfinite(pred_prop_arr[key])])) for key in plot_keys]
+
     for i, key in enumerate(plot_keys):
         print('Plotting predicted ' + key + ' vs. true ' + key)
-        _ = picasso_plot(true_prop_arr[key], pred_prop_arr[key], axis[i], filename=None, x_range=x_range[i], y_range=y_range[i], msize=msize, cmap=cmap, 
+        if 'grad' in key:
+            _ = picasso_plot(true_prop_arr[key], pred_prop_arr[key], axis[i], filename=None, x_range=x_range[i], y_range=y_range[i], msize=msize, cmap=cmap, 
+            histtype=histtype, add_mean=add_mean, mean_color=mean_color, logscale=False, **kwargs)
+        else:
+            _ = picasso_plot(true_prop_arr[key], pred_prop_arr[key], axis[i], filename=None, x_range=x_range[i], y_range=y_range[i], msize=msize, cmap=cmap, 
             histtype=histtype, add_mean=add_mean, mean_color=mean_color, **kwargs)
+
+        for label in (axis[i].get_xticklabels() + axis[i].get_yticklabels()):
+            label.set_fontsize(20)
 
         if i != len(plot_keys) - 1:
             axis[i].set_xticklabels([])
@@ -392,15 +416,11 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
             scatter2 = np.std(resid)
 
             if inset_pos == 'low':
-                axin = inset_axes(axis[i], width="30%",  # width = 30% of parent_bbox
-                   height="30%",  # height : 1 inch
-                   loc='lower right')
+                axin = inset_axes(axis[i], width="30%", height="30%", loc='lower right', borderpad=1.5) #bbox_to_anchor=(0.15,.9,0.,1), bbox_transform=axis[i].transAxes)
                 #axin = axis[i].inset_axes([0.61,0.15,0.34,0.34])
                 axis[i].text(0.25, 0.9, r'$\sigma=%.3f$'%scatter2, fontsize=20, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
             else:
-                axin = inset_axes(axis[i], width="30%",  # width = 30% of parent_bbox
-                   height="30%",  # height : 1 inch
-                   loc='upper left')
+                axin = inset_axes(axis[i], width="30%", height="30%", loc='upper left', borderpad=1.5) #bbox_to_anchor=(0.15,0.9,1,0), bbox_transform=axis[i].transAxes)
                 #axin = axis[i].inset_axes([0.15,0.65,0.34,0.34])
                 axis[i].text(0.75, 0.25, r'$\sigma=%.3f$'%scatter2, fontsize=20, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
             
@@ -409,15 +429,15 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
                 axin.set_xlim(xin_range[i])
             # Set the tick labels font
             for label in (axin.get_xticklabels() + axin.get_yticklabels()):
-                label.set_fontsize(15)
+                label.set_fontsize(10)
             for sp in ['top','bottom','left','right']:
                 axin.spines[sp].set_linewidth(1.5)
             #axis[i].text(0.1, 0.9, r'$\sigma=$ '+str(scatter), horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
             if logscale:
-                axin.set_xlabel(r'$\Delta \log$'+y_label[i],fontsize=17, labelpad=0.5)
+                axin.set_xlabel(r'$\Delta \log$'+ylabel[i],fontsize=10, labelpad=0.5)
             else:
-                axin.set_xlabel(r'$\Delta$'+y_label[i],fontsize=17, labelpad=0.5)
-            axin.set_ylabel(r'$N_{\rm gal}$',fontsize=17)#, labelpad=0)
+                axin.set_xlabel(r'$\Delta$'+ylabel[i],fontsize=10, labelpad=0.5)
+            axin.set_ylabel(r'$N_{\rm gal}$',fontsize=10)#, labelpad=0)
             #axin.yaxis.set_label_coords(-0.2,.5)
 
     if add_unity == True:
@@ -467,7 +487,7 @@ def plot_accuracy_vs_radius(true_prop_arr, pred_prop_arr, axis=None, x_edges=[0,
         add_stats: True, adds the median and the percentile ranges to the plot
 
     """
-    from .analysis import score
+    from ..util import score
 
     rasterized = kwargs.get('rasterized', True)
     cmap = kwargs.pop('cmap', 'inferno')
