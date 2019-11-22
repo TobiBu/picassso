@@ -551,8 +551,8 @@ def plot_accuracy_vs_radius(true_prop_arr, pred_prop_arr, axis=None, x_edges=[0,
     if add_stats:
         delta = 0.5*(x_edges[1]-x_edges[0])
         axis.plot(np.asarray(x_edges[:-2])+delta,median,c='c')
-        axis.plot(np.asarray(x_edges[:-2])+delta,percentile_low,c='c')
-        axis.plot(np.asarray(x_edges[:-2])+delta,percentile_high,c='c')
+        axis.plot(np.asarray(x_edges[:-2])+delta,percentile_low,c='c',ls='dashed',lw=2)
+        axis.plot(np.asarray(x_edges[:-2])+delta,percentile_high,c='c',ls='dashed',lw=2)
 
     if colorbar:
         plt.colorbar(c, ax=axis, label=r'$\log(N)$')

@@ -41,6 +41,10 @@ def circular_geometry(x0=128, y0=128, sma=25):
 
 	from photutils.isophote import EllipseGeometry
 
+	x0 = kwargs.pop('x0', 0.5*image.shape[0])
+	y0 = kwargs.pop('y0', 0.5*image.shape[1])
+	sma = kwargs.pop('sma', 25/256*image.shape[0]) # this corresponds to the half mass radius
+
 	geometry = photutils.isophote.EllipseGeometry(x0, y0, sma, 1., 0., 0.1, False)
 
 	return geometry
@@ -84,6 +88,14 @@ def elliptical_fit(image, thresh=0.1, x0=128, y0=128, sma=25, pa=45, eps=0.25, a
 
 	from photutils.isophote import EllipseGeometry
 	from photutils.isophote import Ellipse
+
+	#scale everything to actual image resolution/ pixel size
+	
+	x0 = kwargs.pop('x0', 0.5*image.shape[0])
+	y0 = kwargs.pop('y0', 0.5*image.shape[1])
+	sma = kwargs.pop('sma', 25/256*image.shape[0]) # this corresponds to the half mass radius
+	maxsma = kwargs.pop('maxsma', 5*sma)
+	minsma = kwargs.pop('minsma', 0.5*sma)
 
 	geometry = EllipseGeometry(x0=x0, y0=y0, sma=sma, eps=eps, pa=pa, astep=astep, linear_growth=linear_growth)
 
@@ -219,6 +231,9 @@ def build_isolist(image, geometry, sma_min=12.5, sma_max=125, sma_steps=10, **kw
 
     # Temporary list to store instances of Isophote
     isolist_ = []
+
+	sma_min = kwargs.pop('sma_min', 12.5/256*image.shape[0]) # this corresponds to 0.5 half mass radii
+	sma_max = kwargs.pop('sma_max', 125/256*image.shape[0])
 
     # loop over semi-major axis values
     smas = np.linspace(sma_min, sma_max, sma_steps)

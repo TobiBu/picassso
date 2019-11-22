@@ -40,6 +40,18 @@ class SDSSMockGalaxy(Galaxy):
     def __build_gal_id(self, filename):
         return self._galnr + "c" + self._camera
 
+    def __load_photometric_maps(self):
+        """ load the photometric maps in all wave length bands. """
+
+        _phot_file = h5py.File(self._file.filename.split('/')[-1][:-16]+'synthetic_image.h5', "r")
+        
+        for band, key in zip(_phot_file['data'],['u','g','r','i','z']):
+            # the illustris SDSS mock images created with sunrise are somehow transposed compared to our 
+            # physical maps. Thus to prevent confusion when plotting them we transpose them here to
+            # comply with our image defintion.
+             
+            self.properties[key+'_band'] = band.T[:,::-1]
+
     def __init_predicted_properties(self, subfolder='prediction/'):
         # try to load properties which are the result of the ML prediction 
 
@@ -67,7 +79,12 @@ class SDSSMockGalaxy(Galaxy):
             idx = keys.index(key)
             #should we make the following below a separate step? 
             self.properties[key] = np.asarray(util.scale_to_physical_units(image_stack[idx], psize)) 
-        
+
+        try:
+            self.__load_photometric_maps()
+        except:
+            pass
+
         # in case we deal with galaxies belonging to the validation or prediction set we have further properties which come as the output of the ML algortith.
         # assumption here is these are seperate files in a subfolder named < prediction >
         # so, let's try to load them as well
@@ -76,7 +93,3 @@ class SDSSMockGalaxy(Galaxy):
             self.__init_predicted_properties(subfolder=subfolder)
 
 
-    #ideas for more utilities:
-    # - plot the galaxy image
-    # - calculate total mass, metallicity etc? --> will be a decorator to the property (see pynbody)
-    # - fitting ellipses etc. or does this go to analysis?  

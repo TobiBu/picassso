@@ -181,6 +181,9 @@ def get_predicted_vs_true_data(survey, filename='predicted_vs_true.h5', plot=Fal
         # calculate the isophotes (where isophotes are actually just ellipses of given geometry and semi-major axis)
         iso_dict_list  = survey['iso_dict'] # again can be obtained by directly calling the underlying function image_tools.get_isolists(survey,geom)
 
+        img_res = survey.properties['image_res']
+        r_half_frac = 50./256.
+
         for idx, gal in tqdm(enumerate(survey['galaxy']), ascii=True, dynamic_ncols=True):
 
             dm_arr.append(gal.properties['dm_mass'])
@@ -189,8 +192,8 @@ def get_predicted_vs_true_data(survey, filename='predicted_vs_true.h5', plot=Fal
 
             for i, key in enumerate(true_keys):
                 
-                # get the pixel sum for stellar masses in an ellipse of semi-major axis of 50 pixels == 2 Rhalf
-                prop_true, _ = image_tools.get_pixel_sum(iso_dict_list[idx],key,50)
+                # get the pixel sum for stellar masses in an ellipse of semi-major axis of 50 pixels == 2 Rhalf for fiducial resolution of 256 pixels
+                prop_true, _ = image_tools.get_pixel_sum(iso_dict_list[idx],key,r_half_frac*img_res)
                 true_prop_arr[key].append(prop_true)
 
                 prop_true = image_tools._get_image_sum(gal, key) #this can be accessed also by survey['total_star_mass']
@@ -218,7 +221,7 @@ def get_predicted_vs_true_data(survey, filename='predicted_vs_true.h5', plot=Fal
             #the whole block above should probably be a function so we can call it just twice, once for truth once for prediction...
             for i, key in enumerate(pred_keys):
 
-                prop_pred, _ = image_tools.get_pixel_sum(iso_dict_list[idx],key,50)
+                prop_pred, _ = image_tools.get_pixel_sum(iso_dict_list[idx],key,r_half_frac*img_res)
                 pred_prop_arr[key].append(prop_pred)
 
                 prop_pred = image_tools._get_image_sum(gal, key)
