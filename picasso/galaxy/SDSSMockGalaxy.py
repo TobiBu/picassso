@@ -40,10 +40,10 @@ class SDSSMockGalaxy(Galaxy):
     def __build_gal_id(self, filename):
         return self._galnr + "c" + self._camera
 
-    def __load_photometric_maps(self):
+    def __load_photometric_maps(self, subfolder='photometry/'):
         """ load the photometric maps in all wave length bands. """
 
-        _phot_file = h5py.File(self._file.filename.split('/')[-1][:-16]+'synthetic_image.h5', "r")
+        _phot_file = h5py.File(self._base_path+subfolder+self._file.filename.split('/')[-1][:-16]+'synthetic_image.h5', "r")
         
         for band, key in zip(_phot_file['data'],['u','g','r','i','z']):
             # the illustris SDSS mock images created with sunrise are somehow transposed compared to our 
