@@ -48,7 +48,7 @@ def make_maps(galaxy, key, save=False, **kwargs):
 
 def rgb_image(galaxy, filename=None, r_band='i', g_band='r', b_band='g',
     r_scale=1.3, g_scale=1.0, b_scale=0.7, 
-    lupton_alpha=0.5, lupton_Q=0.5, scale_min=1e-4, 
+    lupton_alpha=8e-13, lupton_Q=10, scale_min=1e-10, 
     ret_img=False, axes=None, plot=True, save_indiv_bands=False, **kwargs):
 
     '''
@@ -107,7 +107,7 @@ def rgb_image(galaxy, filename=None, r_band='i', g_band='r', b_band='g',
 
     '''
 
-    filename = kwargs.pop('filename', galaxy._base_path + galaxy._Galaxy_id + "_rgb")
+    #filename = kwargs.pop('filename', galaxy._base_path + galaxy._Galaxy_id + "_rgb")
 
     # use np.copy to avoid changing the initial images when scaling by r_,g_,b_scale later
     r_image = np.copy(galaxy.properties[r_band+'_band'])
@@ -159,7 +159,8 @@ def rgb_image(galaxy, filename=None, r_band='i', g_band='r', b_band='g',
             axes.imshow(img[::-1, :], origin='lower', interpolation='nearest')
             plt.axis('off')
 
-        plt.savefig(filename+'.pdf', bbox_inches='tight')
+        if filename:
+            plt.savefig(filename+'.pdf', bbox_inches='tight')
 
     if save_indiv_bands:
         for iii in np.arange(3):

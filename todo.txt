@@ -1,0 +1,3 @@
+## To Dos and ideas for Picassso ##
+
+# wrap somehow the survey (arrays) into a pandas dataframe...

@@ -230,6 +230,7 @@ and the detected cython version is {1}.
 install_requires = [
     'cython>=0.20',
     'h5py',
+    'pytorch',
     'matplotlib',
     'numpy>=1.9.2',
     'scipy',

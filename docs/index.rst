@@ -3,18 +3,79 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to picasso's documentation!
+Picassso Documentation
 ===================================
 
+Picassso is a python 3 toolkit and machine learning framework to operate on astronomical images.
+Picassso is an acronym for **P**\ ainting\ **I**\ ntrinsi\ **C** **A**\ ttributes onto\ **S**\ D\ **SS**\  
+**O**\ bjects and was designed for but not limited to **image-to-image** translation tasks.
+Correspondingly, Picassso contains modules for image data handling, machine learning and analysis.  
+
+In order to get started follow the :ref:`picassso-installation` guide and try the :ref:`tutorials`.
+
+
+What's next?
+------------
+
+Consult the :doc:`installation` documentation for instructions on how
+to use Picassso and try out the :ref:`tutorial <snapshot_manipulation>` which explains
+ some of picassso's analysis features.
+
+The full documentation is organized into three sections:
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+
+   Installation <installation>
+   Tutorials <tutorials/tutorials>
+   Reference <reference/index>
+
+
+All of the information in the reference guide is also available
+through the interactive python help system. In ipython, this is as
+easy as putting a `?` at the end of a command:
+
+.. ipython::
+
+   In [1]: import picassso
+
+   In [2]: picassso.load?
 
 
 
-Indices and tables
-==================
+.. _getting-help:
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Seeking Further Assistance
+---------------------------
+
+
+If the tutorials don't answer your question, and you find yourself stuck, 
+don't hesitate to contact the author.
+
+We greatly value feedback from users, especially when things are not
+working correctly because this is the best way for us to correct
+bugs. This also includes any problems you encounter with this documentation.
+
+Feel free to use the `github issue tracker <https://github.com/picassso/picassso/issues>`_ if you
+encounter a problem, and create an issue there.
+
+If you use the code regularly for your projects, please consider contributing
+your code back using a `pull request
+<https://help.github.com/articles/using-pull-requests>`_.
+
+.. _acknowledging-pynbody:
+
+Acknowledging Picassso in Scientific Publications
+------------------------------------------------
+
+Picassso is an open-source development. We would appreciate if you cite Picasssso via its
+`Astrophysics Source Code Library <http://ascl.net/1305.002>`_ entry when using it in preparing 
+a scientific publication using the following BibTex::
+
+   @misc{pynbody,
+     author = {{Pontzen}, A. and {Ro{\v s}kar}, R. and {Stinson}, G.~S. and {Woods},
+        R. and {Reed}, D.~M. and {Coles}, J. and {Quinn}, T.~R.},
+     title = "{pynbody: Astrophysics Simulation Analysis for Python}",
+     note = {Astrophysics Source Code Library, ascl:1305.002},
+     year = 2013
+   }

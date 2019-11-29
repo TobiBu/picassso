@@ -19,7 +19,7 @@ from .configuration import config
 
 from . import util, array, family, survey #filt doo we need to implement filters on surveys?
 from .survey import *
-from . import analysis
+from . import analysis, ML
 
 
 #fill these functions with meaning

@@ -16,7 +16,6 @@ import copy
 
 from .. import survey
 
-
 class Galaxy(object):
 
     """

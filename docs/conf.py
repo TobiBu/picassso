@@ -87,13 +87,30 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme' #'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
 # html_theme_options = {}
+
+# option taken from colossus by Benedikt Diemer
+# https://bdiemer.bitbucket.io/colossus/index.html
+
+#if html_theme == 'scipy':
+#    html_theme_options = {"edit_link": False, "sidebar": 'right', 'navigation_links': True,
+#    'rootlinks': [("https://bitbucket.org/bdiemer/colossus", "BitBucket Repository")]}
+#elif html_theme == 'cloud':
+#    html_theme_options = {'rightsidebar': True, 'max_width': '13in'}
+#elif html_theme == 'classic':
+#    html_theme_options = {'rightsidebar': False}
+#elif html_theme == 'bizstyle':
+#    html_theme_options = {'rightsidebar': True}
+#else:
+#    html_theme_options = {} #
+
+#    
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

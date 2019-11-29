@@ -241,8 +241,9 @@ class SDSSMockSurvey(Survey):
                     _file_idx = self._files.get_file_idx(file)
                     if array_name == "galaxy":
                         #instantiate the galaxy object
-                        with h5py.File(self._files[_file_idx], self._files._mode) as f: 
-                            tmp_arr.append(SDSSMockGalaxy(f))
+                        tmp_arr.append(SDSSMockGalaxy(self._files[_file_idx]))
+                        #with h5py.File(self._files[_file_idx], self._files._mode) as f: 
+                        #    tmp_arr.append(SDSSMockGalaxy(f))
                     else:
                         #if we do not ask for the galaxy itself, load the "postprocessed" array
                         #tmp_arr.append(self._files[file_idx][array_name].value)   
@@ -374,7 +375,11 @@ def do_properties(survey):
 ## We have some internally derive quantities...
 
 #add all quantities, such as the stellar mass in half mass radius, the photutils isocontours when we have a working survey object...
-# So far there is a key error here...
+
+#TODO#
+# do we want to add the geometry and iso dicts to the galaxy properties dictionary or do we keep this clean?
+# might think about a derived property dict, where we can put the geometry and iso_lists once they are pre-calculated.
+
 @SDSSMockSurvey.derived_quantity
 def total_star_mass(self) :
     tmp = [np.sum(x.properties['stars_Masses']) for x in self['galaxy']]
