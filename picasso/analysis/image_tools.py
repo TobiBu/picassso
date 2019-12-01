@@ -19,10 +19,9 @@ from ..survey import Survey
 from ..galaxy import Galaxy
 
 # modify the code below to comply with the Survey and galaxy objects derived arrays once the key error is removed...
-# get the RGB image functions from pynbody to combine u,g,r,i.z images to nice RGB images...
 
 
-def circular_geometry(x0=128, y0=128, sma=25):
+def circular_geometry(**kwargs):
     '''Initialize circular geometry object from ellipse geometry.
         For further information see documentation of the photutils package "https://photutils.readthedocs.io/en/stable/"
         
@@ -50,7 +49,7 @@ def circular_geometry(x0=128, y0=128, sma=25):
     return geometry
 
 
-def elliptical_fit(image, thresh=0.1, x0=128, y0=128, sma=25, pa=45, eps=0.25, astep=0.1, linear_growth=False, maxsma=125, minsma=12.5, **kwargs):
+def elliptical_fit(image, thresh=0.1, pa=45, eps=0.25, astep=0.1, linear_growth=False, **kwargs):
     '''
             Fits an elliptical aperture geometry to an image.
 
@@ -60,11 +59,6 @@ def elliptical_fit(image, thresh=0.1, x0=128, y0=128, sma=25, pa=45, eps=0.25, a
 
                     thresh: threshold value for the ellipse fitting procedure,
                     for more details see photutils package.
-
-                    x0, y0: pixel values of ellipse center 
-
-                    sma: semi-major axis of initial ellipse in pixels. A fiducial value of 50 would correspond to 
-                            2 Re in fiducial images of 256 pixel per 10 Re.
 
                     eps: ellipticity of initial ellipse
 
@@ -76,7 +70,14 @@ def elliptical_fit(image, thresh=0.1, x0=128, y0=128, sma=25, pa=45, eps=0.25, a
 
                     linear_growth: The semimajor axis growing/shrinking mode. The default is False.
 
-                    maxsma: Maximum value for semi-major axis in pixel. If not set, the algorithm will determine
+            optional arguemnts:
+
+                    x0, y0: pixel values of ellipse center
+
+                    sma: semi-major axis of initial ellipse in pixels. A fiducial value of 50 would correspond to 
+                            2 Re in fiducial images of 256 pixel per 10 Re.
+
+                    maxsma, minsma: Maximum/minimum value for semi-major axis in pixel. If not set, the algorithm will determine
                              when to stop growing the ellipse itself. For more details see 
                              https://photutils.readthedocs.io/en/stable/api/photutils.isophote.Ellipse.html#photutils.isophote.Ellipse.fit_image
 
@@ -210,7 +211,7 @@ def fit_image(galaxy, key='stars_Masses', thresh=0.1, plot=False, save=True, **k
 
     return geometry
 
-def build_isolist(image, geometry, sma_min=12.5, sma_max=125, sma_steps=10, **kwargs):
+def build_isolist(image, geometry, sma_steps=10, **kwargs):
     '''
     This function loops through a number of semi-major axis values and creates 
     a list of isophotes of given geometry from the input image.
@@ -224,9 +225,12 @@ def build_isolist(image, geometry, sma_min=12.5, sma_max=125, sma_steps=10, **kw
 
             geometry: instance of EllipseGeometry in order to specify the ellipse geometry to use.
 
+            sma_steps: number of bins to take in semi-major axis
+
+    optional arguments:
+
             sma_min, sma_max: minimum and maximum of semi-major axis values in pixel
 
-            sma_steps: number of bins to take in semi-major axis
     '''
 
     # Temporary list to store instances of Isophote
