@@ -263,7 +263,7 @@ dist = setup(name = 'picasso',
              url = '',
              package_dir = {'picasso/': ''},
              packages = ['picasso', 'picasso/analysis', 'picasso/plot',
-                         'picasso/survey', 'picasso/galaxy', 'picasso/training' ],
+                         'picasso/survey', 'picasso/galaxy', 'picasso/ML' ],
 
              package_data={'picasso': ['default_config.ini'],#check later what we need
                            'picasso/analysis': ['cmdlum.npz', 
