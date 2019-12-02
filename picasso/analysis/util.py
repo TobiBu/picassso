@@ -151,7 +151,7 @@ def get_predicted_vs_true_data(survey, filename='predicted_vs_true.h5', plot=Fal
         print('Creating the data file.')
 
         # get dummy keys
-        keys = survey['galaxy'][0].properties.keys()
+        keys = survey['galaxy'][0].keys #survey['galaxy'][0].properties.keys()
         keys = [k for k in keys if k not in ['Galaxy_id','psize','dm_mass']]
 
         true_keys = [k for k in keys if 'pred' not in k]
