@@ -11,12 +11,18 @@ import numpy as np
 import matplotlib.pylab as plt
 import gc 
 
-def make_maps(galaxy, key, save=False, **kwargs):
+def make_maps(galaxy, key, plot=False, save=False, **kwargs):
     '''Make maps of quantities key.
 
         Input:
 
             galaxy: galaxy object
+
+            key: property to plot
+
+            plot: bool, if True, show the plot in logarithmic scale
+
+            save: bool, if plot=True, save the figure.
     '''
 
     filename = kwargs.pop('filename', galaxy._base_path + galaxy._Galaxy_id + "_" + str(key) + '.pdf')
@@ -34,15 +40,16 @@ def make_maps(galaxy, key, save=False, **kwargs):
         cmap = kwargs.pop('cmap', 'inferno')
     elif 'StellarFormationTime' in key:
         cmap = kwargs.pop('cmap', 'magma_r')
-    elif 'stars_Masses':
+    elif 'Masses' in key:
         cmap = kwargs.pop('cmap', 'viridis')
     else:
         cmap = kwargs.pop('cmap', 'Greys')
 
-    img = ax.imshow(np.log10(x), cmap=cmap, origin='lower')
-    
-    if save:
-        plt.savefig(filename)
+    if plot:
+        img = ax.imshow(np.log10(x), cmap=cmap, origin='lower')
+
+        if save:
+            plt.savefig(filename)
 
     return x
 
