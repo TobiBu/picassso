@@ -240,10 +240,10 @@ class Survey(object):
 
         self._assert_not_family_array(name)
 
-        if isinstance(item, array.SimArray):
+        if isinstance(item, array.SurveyArray):
             ax = item
         else:
-            ax = np.asanyarray(item).view(array.SimArray)
+            ax = np.asanyarray(item).view(array.SurveyArray)
 
         if name not in self.keys():
             # Array needs to be created. We do this through the
@@ -893,7 +893,7 @@ class Survey(object):
             if type(index) is slice:
                 ret = x[index]
             else:
-                ret = array.IndexedSimArray(x, index)
+                ret = array.IndexedSurveyArray(x, index)
 
             ret.family = None
             return ret

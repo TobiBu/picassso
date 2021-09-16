@@ -30,6 +30,8 @@ configuration.configure_physical_scaling()
 print("Picasso's configurations:")
 print(config)
 
+derived_array = survey.Survey.derived_quantity
+
 __version__ = '0.1'
 
 __all__ = ['load', 'new', 'analysis', 'train']

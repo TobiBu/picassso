@@ -87,7 +87,7 @@ class MultiFileManager(object) :
 class SDSSMockSurvey(Survey):
     # decide later which are basic loadables...
     _basic_loadable_keys = {family.training: set(['galaxy', 'mass', 'metals','distance']),
-                            family.prediction: set(['galaxy', 'mass', 'metals','distance']),
+                            family.testing: set(['galaxy', 'mass', 'metals','distance']),
                             family.validation: set(['galaxy', 'mass', 'metals','distance']),
                             None: set(['galaxy'])}
 

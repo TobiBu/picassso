@@ -6,7 +6,7 @@ def _get_basic_config():
 
     config = {'verbose': False}
 
-    config['families'] = {'training':"train, t, tr",'prediction':"p, pred, predict","validation":"val, v, valid"}
+    config['families'] = {'training':"train, t, tr",'testing':"test","validation":"val, v, valid"}
 
     config['survey-class-priority'] = ['SDSSMockSurvey']#,'ClassicSurvey','MANGASurvey']
 

@@ -91,14 +91,14 @@ Upgrading your installation and testing features or bug-fixes
 If you want to use the most recent version from the repository you 
 can easily update your installation. We refer you to the upgrading 
 your installation section of the 
-`pynbody package <http://pynbody.github.io/pynbody/installation.html>`_ which explains 
+`picassso package <http://picassso.github.io/picassso/installation.html>`_ which explains 
 this procedure quite well.
 
 
 Load your survey data and start analyzing
 -----------------------------------------
 
-Check out the rest of the :ref:`tutorials section <tutorials>` and
+Check out the rest of the :ref:`tutorials section <tutorial>` and
 especially the :ref:`data-access` to get going.
 
 

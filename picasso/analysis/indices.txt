@@ -1,0 +1,19 @@
+galaxy indices for best, median andd worst prediction
+
+min 	med 	max
+all props
+4151	983 	2802
+
+stars only
+237		3440	1297
+
+stars mass only
+1454	1444	1297
+
+gas mass only
+1827	3739	2921
+
+gas only
+839		98		2802
+
+

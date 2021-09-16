@@ -99,6 +99,14 @@ def picasso_plot(x, y, axis, filename=None, **kwargs):
     if logscale:
         x_to_bin = np.log10(x)
         y_to_bin = np.log10(y)
+        # weird error from scipy version 1.4. which can't deal with NaNs anymore in binned statistics
+        finite = np.isfinite(x_to_bin)
+        x_to_bin = x_to_bin[finite]
+        y_to_bin = y_to_bin[finite]
+        finite = np.isfinite(y_to_bin)
+        x_to_bin = x_to_bin[finite]
+        y_to_bin = y_to_bin[finite]
+
         x_range_bin = np.log10(x_range)
         y_range_bin = np.log10(y_range)
     else:
@@ -347,6 +355,7 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
     x_range = kwargs.pop('x_range', None) #[(0, 15)] * len(plot_keys))
     y_range = kwargs.pop('y_range', None) #[(0, 15)] * len(plot_keys))
     ylabel = kwargs.pop('ylabel', plot_keys)
+    xlabel = kwargs.pop('xlabel', None)
     figsize = kwargs.pop('figsize', (5, 5*len(plot_keys)))
     xin_range = kwargs.pop('xin_range', [None] * len(plot_keys))
     msize = kwargs.pop('msize', 5)
@@ -357,6 +366,7 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
     logscale = kwargs.get('logscale', False)
     inset = kwargs.pop('inset', True)
     inset_pos = kwargs.pop('inset_pos', 'low')
+    fontsize = kwargs.pop('fontsize', 25)
     #yin_range = kwargs.pop('yin_range', [None] * len(keys))
 
     if not axis:
@@ -364,18 +374,26 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
         axis = []
         gs = gridspec.GridSpec(len(plot_keys), 1)
         gs.update(wspace=.0, hspace=0.)  # set the spacing between axes.
-
+        
         for i, key in enumerate(plot_keys):
-            
             axis.append(plt.subplot(gs[i]))
-            if ylabel != None:
-                axis[i].set_ylabel(ylabel[i], fontsize=20)
-            else:
-                axis[i].set_ylabel(key, fontsize=20)
-            
-            if logscale:
-                axis[i].set_xscale('log')
-                axis[i].set_yscale('log')
+
+    else:
+        assert(len(axis) == len(plot_keys))
+        
+    for i, key in enumerate(plot_keys):
+        if ylabel != None:
+            axis[i].set_ylabel(ylabel[i], fontsize=fontsize)
+        else:
+            axis[i].set_ylabel(key, fontsize=fontsize)
+        if xlabel != None:
+            axis[i].set_xlabel(xlabel[i], fontsize=fontsize)
+        else:
+            axis[i].set_xlabel('True property', fontsize=fontsize)
+
+        if logscale:
+            axis[i].set_xscale('log')
+            axis[i].set_yscale('log')        
 
     if not x_range:
         x_range = [(np.nanmin(true_prop_arr[key][np.isfinite(true_prop_arr[key])])+1e-5,np.nanmax(true_prop_arr[key][np.isfinite(true_prop_arr[key])])) for key in plot_keys]
@@ -395,7 +413,7 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
             histtype=histtype, add_mean=add_mean, mean_color=mean_color, **kwargs)
 
         for label in (axis[i].get_xticklabels() + axis[i].get_yticklabels()):
-            label.set_fontsize(20)
+            label.set_fontsize(fontsize)
 
         if i != len(plot_keys) - 1:
             axis[i].set_xticklabels([])
@@ -414,16 +432,19 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
             # check also for nan
             resid = resid[np.isfinite(resid)]
             scatter2 = np.std(resid)
+            mean2 = np.mean(resid)
 
             if inset_pos == 'low':
-                axin = inset_axes(axis[i], width="30%", height="30%", loc='lower right', borderpad=1.5) #bbox_to_anchor=(0.15,.9,0.,1), bbox_transform=axis[i].transAxes)
+                axin = inset_axes(axis[i], width="30%", height="30%", loc='lower right', borderpad=7) #bbox_to_anchor=(0.15,.9,0.,1), bbox_transform=axis[i].transAxes)
                 #axin = axis[i].inset_axes([0.61,0.15,0.34,0.34])
-                axis[i].text(0.25, 0.9, r'$\sigma=%.3f$'%scatter2, fontsize=20, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
+                axis[i].text(0.25, 0.9, r'$\sigma=%.3f$'%scatter2, fontsize=fontsize, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
+                axis[i].text(0.25, 0.75, r'$\mu=%.3f$'%mean2, fontsize=fontsize, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
             else:
-                axin = inset_axes(axis[i], width="30%", height="30%", loc='upper left', borderpad=1.5) #bbox_to_anchor=(0.15,0.9,1,0), bbox_transform=axis[i].transAxes)
+                axin = inset_axes(axis[i], width="30%", height="30%", loc='upper left', borderpad=7) #bbox_to_anchor=(0.15,0.9,1,0), bbox_transform=axis[i].transAxes)
                 #axin = axis[i].inset_axes([0.15,0.65,0.34,0.34])
-                axis[i].text(0.75, 0.25, r'$\sigma=%.3f$'%scatter2, fontsize=20, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
-            
+                axis[i].text(0.75, 0.25, r'$\sigma=%.3f$'%scatter2, fontsize=fontsize, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
+                axis[i].text(0.75, 0.4, r'$\mu=%.3f$'%mean2, fontsize=fontsize, horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
+
             axin.hist(resid, bins='auto', histtype=histtype)#, range=(np.percentile(resid,0.1),np.percentile(resid,0.9)))
             if xin_range[i] != None:
                 axin.set_xlim(xin_range[i])
@@ -431,13 +452,13 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
             for label in (axin.get_xticklabels() + axin.get_yticklabels()):
                 label.set_fontsize(10)
             for sp in ['top','bottom','left','right']:
-                axin.spines[sp].set_linewidth(1.5)
+                axin.spines[sp].set_linewidth(2)
             #axis[i].text(0.1, 0.9, r'$\sigma=$ '+str(scatter), horizontalalignment='center', verticalalignment='center', transform=axis[i].transAxes)
             if logscale:
-                axin.set_xlabel(r'$\Delta \log$'+ylabel[i],fontsize=10, labelpad=0.5)
+                axin.set_xlabel(r'$\Delta \log$'+ylabel[i],fontsize=.5*fontsize, labelpad=0.5)
             else:
-                axin.set_xlabel(r'$\Delta$'+ylabel[i],fontsize=10, labelpad=0.5)
-            axin.set_ylabel(r'$N_{\rm gal}$',fontsize=10)#, labelpad=0)
+                axin.set_xlabel(r'$\Delta$'+ylabel[i],fontsize=.3*fontsize, labelpad=0.5)
+            axin.set_ylabel(r'$N_{\rm gal}$',fontsize=.5*fontsize)#, labelpad=0)
             #axin.yaxis.set_label_coords(-0.2,.5)
 
     if add_unity == True:
@@ -446,8 +467,6 @@ def plot_predicted_vs_true(true_prop_arr, pred_prop_arr, filename='predicted_vs_
             x_lim = ax.get_xbound()
             y_lim = ax.get_ybound()
             ax.plot(x_lim, y_lim, color='k', lw=2, zorder=-10)
-
-    axis[-1].set_xlabel('True property')
 
     if filename:
         if 'rasterized':
@@ -505,8 +524,6 @@ def plot_accuracy_vs_radius(true_prop_arr, pred_prop_arr, axis=None, x_edges=[0,
         axis.set_xlabel(r'$R/R_{\rm half}$')
         if y_label:
             axis.set_ylabel(y_label)
-        else:
-            axis.set_ylabel(key)
 
     # for loops are slow in python but I am too lazy to think about a smart version of this...
     #probably map would work or numpy.apply_along_axis
@@ -555,12 +572,12 @@ def plot_accuracy_vs_radius(true_prop_arr, pred_prop_arr, axis=None, x_edges=[0,
         axis.plot(np.asarray(x_edges[:-2])+delta,percentile_high,c='c',ls='dashed',lw=2)
 
     if colorbar:
-        plt.colorbar(c, ax=axis, label=r'$\log(N)$')
+        plt.colorbar(c, ax=axis, label=r'$\log(N_{\rm gal})$')
 
     if filename:
         plt.savefig(filename,bbox_inches='tight')
 
-    return axis
+    return axis, c
 
 
 default_plot_keys = ('gas_GFM_Metallicity', 'gas_Masses', 'gas_NeutralHydrogenAbundance',

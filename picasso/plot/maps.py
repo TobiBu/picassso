@@ -29,9 +29,6 @@ def make_maps(galaxy, key, plot=False, save=False, **kwargs):
 
     x = galaxy.properties[key]
 
-    fig = plt.figure(figsize=(10, 10))
-    ax = plt.subplot(111)
-
     if 'GFM_Metallicity' in key:
         cmap = kwargs.pop('cmap', 'plasma')
     elif 'NeutralHydrogenAbundance' in key:
@@ -46,6 +43,8 @@ def make_maps(galaxy, key, plot=False, save=False, **kwargs):
         cmap = kwargs.pop('cmap', 'Greys')
 
     if plot:
+        fig = plt.figure(figsize=(10, 10))
+        ax = plt.subplot(111)
         img = ax.imshow(np.log10(x), cmap=cmap, origin='lower')
 
         if save:
@@ -54,9 +53,9 @@ def make_maps(galaxy, key, plot=False, save=False, **kwargs):
     return x
 
 def rgb_image(galaxy, filename=None, r_band='i', g_band='r', b_band='g',
-    r_scale=1.3, g_scale=1.0, b_scale=0.7, 
-    lupton_alpha=8e-13, lupton_Q=10, scale_min=1e-10, 
-    ret_img=False, axes=None, plot=True, save_indiv_bands=False, **kwargs):
+    r_scale=1., g_scale=1.0, b_scale=1.2, 
+    lupton_alpha=1e-12, lupton_Q=8, scale_min=1e-11, 
+    ret_img=False, axes=None, plot=True, save_indiv_bands=False, ret_indiv_bands=False, **kwargs):
 
     '''
     Make a 3-color image of the galaxy based on the galaxy maps in
@@ -89,13 +88,13 @@ def rgb_image(galaxy, filename=None, r_band='i', g_band='r', b_band='g',
        *b_scale*: float (default: 0.7)
          The scaling of the blue channel before channels are combined
 
-       *lupton_alpha: float (default 0.5)
+       *lupton_alpha: float (default 8e-13)
          luptin alpha parameter
 
-       *lupton_Q: float (default 0.5)
+       *lupton_Q: float (default 10)
          luptin Q parameter
 
-       *scale_min: float (default 1e-4)
+       *scale_min: float (default 1e-10)
          minimum scale
 
        *ret_img*: bool (default: False)
@@ -106,7 +105,10 @@ def rgb_image(galaxy, filename=None, r_band='i', g_band='r', b_band='g',
 
        *save_indiv_bands: bool (default False)
          if True, all three individual bands representing the r,g and b
-         channel are saved as well. 
+         channel are saved as well.
+
+       *ret_indiv_bands*: bool (default: False)
+         if True, also individual bands of the RGB image are returned
 
     Returns:
 
@@ -169,19 +171,27 @@ def rgb_image(galaxy, filename=None, r_band='i', g_band='r', b_band='g',
         if filename:
             plt.savefig(filename+'.pdf', bbox_inches='tight')
 
+    if ret_indiv_bands:
+        indiv_bands = []
+        for iii in np.arange(3):
+            indiv_bands.append(img[::-1,:,iii])
+
     if save_indiv_bands:
         for iii in np.arange(3):
             fig = plt.figure()
             ax = fig.add_subplot(111)
 
-            imgplot = ax.imshow(img[:,:,iii],origin='lower', interpolation='nearest', cmap = 'Greys', vmin=0, vmax=1)
+            imgplot = ax.imshow(img[::-1,:,iii],origin='lower', interpolation='nearest', cmap = 'Greys', vmin=0, vmax=1)
             plt.axis('off')
             fig.savefig(filename[:-4]+"_band_"+str(iii)+'.pdf', bbox_inches='tight')
 
             del imgplot
 
     if ret_img:
-        return img
+        if ret_indiv_bands:
+            return img[::-1, :], indiv_bands
+        else:
+            return img[::-1, :]
 
     del b_image, g_image, r_image, I, val, img
     gc.collect()

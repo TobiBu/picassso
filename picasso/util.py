@@ -299,9 +299,9 @@ def relative_slice(s_relative_to, s):
     s_step = s.step if s.step is not None else 1
 
     if (s.start - s_relative_to.start) % s_relative_to_step != 0:
-        raise ValueError, "Incompatible slices"
+        raise ValueError("Incompatible slices")
     if s_step % s_relative_to_step != 0:
-        raise ValueError, "Incompatible slices"
+        raise ValueError("Incompatible slices")
 
     start = (s.start - s_relative_to.start) // s_relative_to_step
     step = s_step // s_relative_to_step
@@ -380,7 +380,7 @@ def concatenate_indexing(i1, i2):
     elif isinstance(i1, (np.ndarray, list)) and isinstance(i2, (slice, np.ndarray, slice)):
         return np.asarray(i1)[i2]
     else:
-        raise TypeError, "Don't know how to chain these index types"
+        raise TypeError("Don't know how to chain these index types")
 
 
 def indexing_length(sl_or_ar):
@@ -412,8 +412,6 @@ def set_array_if_not_same(a_store, a_in, index=None):
         index = slice(None)
     if not arrays_are_same(a_store[index], a_in):
         a_store[index] = a_in
-        if not hasattr(a_in.units, "_no_unit"):
-            a_store.units = a_in.units
 
 
 def index_of_first(array, find):
@@ -496,7 +494,7 @@ def bisect(left, right, f, epsilon=None, eta=0, verbose=False, niter_max=200):
         else:
             right = mid
 
-    raise ValueError, "Bisection algorithm did not converge"
+    raise ValueError("Bisection algorithm did not converge")
 
 
 class ExecutionControl(object):

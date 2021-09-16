@@ -18,8 +18,8 @@ What's next?
 ------------
 
 Consult the :doc:`installation` documentation for instructions on how
-to use Picassso and try out the :ref:`tutorial <snapshot_manipulation>` which explains
- some of picassso's analysis features.
+to use Picassso and try out the :ref:`tutorial <survey_manipulation>` which 
+explains some of picassso's analysis features.
 
 The full documentation is organized into three sections:
 
@@ -27,7 +27,7 @@ The full documentation is organized into three sections:
    :maxdepth: 1
 
    Installation <installation>
-   Tutorials <tutorials/tutorials>
+   Tutorial <tutorial/tutorial>
    Reference <reference/index>
 
 
@@ -63,19 +63,18 @@ If you use the code regularly for your projects, please consider contributing
 your code back using a `pull request
 <https://help.github.com/articles/using-pull-requests>`_.
 
-.. _acknowledging-pynbody:
+.. _acknowledging-picassso:
 
 Acknowledging Picassso in Scientific Publications
 ------------------------------------------------
 
 Picassso is an open-source development. We would appreciate if you cite Picasssso via its
-`Astrophysics Source Code Library <http://ascl.net/1305.002>`_ entry when using it in preparing 
+`Astrophysics Source Code Library <http://ascl.net/????.???>`_ entry when using it in preparing 
 a scientific publication using the following BibTex::
 
-   @misc{pynbody,
-     author = {{Pontzen}, A. and {Ro{\v s}kar}, R. and {Stinson}, G.~S. and {Woods},
-        R. and {Reed}, D.~M. and {Coles}, J. and {Quinn}, T.~R.},
-     title = "{pynbody: Astrophysics Simulation Analysis for Python}",
-     note = {Astrophysics Source Code Library, ascl:1305.002},
-     year = 2013
+   @misc{picassso,
+     author = {{Buck}, T. and {Wolf}, S.,
+     title = "{picassso: Painting Intrinsic Attributes onto SDSS objects}",
+     note = {Astrophysics Source Code Library, ascl:????.???},
+     year = 2020
    }
