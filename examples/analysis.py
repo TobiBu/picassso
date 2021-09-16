@@ -11,8 +11,8 @@ perform gradient fits...
 
 """
 
-import picasso as p
-from picasso.analysis import util
+import picassso as p
+from picassso.analysis import util
 
 
 s = p.load('./')
