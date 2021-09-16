@@ -1,5 +1,5 @@
-import picasso as p
-from picasso.plot.maps import *
+import picassso as p
+from picassso.plot.maps import *
 
 import numpy as np
 import matplotlib.pyplot as plt
