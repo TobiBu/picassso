@@ -37,13 +37,11 @@ You might do so by creating a [tutorial](http://picassso.github.io/picassso/tuto
 
 ### Acknowledging the code
 
-If you are using picassso we would appreciate if you acknowledge it by citing the [Astrophysics Source Code Library entry](http://adsabs.harvard.edu/abs/...). Optionally you can also cite the Zenodo DOI for the specific version of picasso that you are using, which may be found [here](https://doi.org/10.5281/zenodo...).
+If you are using picassso we would appreciate if you acknowledge it by citing the [Astrophysics Source Code Library entry](http://adsabs.harvard.edu/abs/...). Optionally you can also cite the Zenodo DOI for the specific version of picassso that you are using, which may be found [here](https://doi.org/10.5281/zenodo...).
 
 ### Support and Contact 
 
-If you have trouble with picasso or you have feature
-requests/suggestions you can [submit an issue](https://github.com/picassso/picassso/issues), 
-and/or shoot us an email on the [Usergroup mailing
-list](https://groups.google.com/forum/?fromgroups#!forum/picassso-users).
+If you have trouble with picassso or you have feature
+requests/suggestions you can write to tbuck at aip.de 
 
 
