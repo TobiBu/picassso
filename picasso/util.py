@@ -111,7 +111,7 @@ def scale_to_physical_units(x, psize):
     return xx
 
 def load_halo_properties(halo_idx, camera, scale=None, smoothing=0., path='./data/halodata/', log=False):
-    target_file_name = path + f'halo_{halo_idx}_camera_{camera}_physical_data.h5'
+    target_file_name = path + 'halo_{halo_idx}_camera_{camera}_physical_data.h5'
 
     # offer alternative camera
     with open_hdf5(target_file_name, "r") as h5file:

@@ -234,6 +234,8 @@ install_requires = [
     'matplotlib',
     'numpy>=1.9.2',
     'scipy',
+    'photutils',
+    'tqdm'
 ]
 
 tests_require = [

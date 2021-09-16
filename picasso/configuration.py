@@ -24,24 +24,24 @@ def configure_directories():
     user = Path.home().name
 
     if user == "tbuck":
-        path_prefix = f'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/'
-        path_predicted = f'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/prediction/val_100000/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/'
-        path_true = f'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/prediction/val_100000/true/' 
+        path_prefix = '/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/'
+        path_predicted = '/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/prediction/val_100000/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/'
+        path_true = '/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/prediction/val_100000/true/' 
         #f'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/prediction/val_100000/true/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/'
         pvt_file = path_prefix + 'predicted_vs_true.h5'
         dm_file = path_prefix + 'illustris_fof_props.h5'
 
     elif user == "swolf":
         path_prefix = '/mnt/data1/swolf/deepspacelearning_experiments/sparseloss_16/prediction/val_100000/'
-        path_predicted = f'/mnt/data1/swolf/deepspacelearning_experiments/sparseloss_16/prediction/val_100000/'
-        path_true = f'/mnt/data1/swolf/deepspacelearning_experiments/sparseloss_16/prediction/val_100000/true/'
+        path_predicted = '/mnt/data1/swolf/deepspacelearning_experiments/sparseloss_16/prediction/val_100000/'
+        path_true = '/mnt/data1/swolf/deepspacelearning_experiments/sparseloss_16/prediction/val_100000/true/'
         pvt_file = path_prefix + 'predicted_vs_true.h5'
         dm_file = '/mnt/data1/swolf/deepspacelearning_experiments/illustris_fof_props.h5'
 
     elif user == "buck":
-        path_prefix = f'/Users/buck/Documents/PhD/machine_learning/data/'
-        path_predicted = f'/Users/buck/Documents/PhD/machine_learning/data//val_100000/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/'
-        path_true = f'/Users/buck/Documents/PhD/machine_learning/data/val_100000/true/' 
+        path_prefix = '/Users/buck/Documents/PhD/machine_learning/data/'
+        path_predicted = '/Users/buck/Documents/PhD/machine_learning/data//val_100000/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/'
+        path_true = '/Users/buck/Documents/PhD/machine_learning/data/val_100000/true/' 
         #f'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/prediction/val_100000/true/' #'/isaac/ptmp/gc/tbuck/PhD_preparation/Machine_learning/data/truth/'
         pvt_file = path_prefix + 'predicted_vs_true.h5'
         dm_file = path_prefix + 'illustris_fof_props.h5'
