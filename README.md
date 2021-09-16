@@ -1,8 +1,8 @@
 picassso
 =======
-[![Build Status](https://travis-ci.org/picasso/picasso.svg?branch=master)](https://travis-ci.org/picassso/picassso)
+[![Build Status](https://travis-ci.org/picassso/picassso.svg?branch=master)](https://travis-ci.org/picassso/picassso)
 
-[Picasso](https://github.com/picassso/picassso) is a light-weight, 
+[Picassso](https://github.com/picassso/picassso) is a light-weight, 
 machine learning and image analysis framework for galaxy images. 
 
 Written in python, the core tools are accompanied by a library of
