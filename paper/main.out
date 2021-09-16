@@ -1,0 +1,18 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Methods}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Synthetic observations}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Maps of physical quantities}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{Machine Learning setup}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{Network Architecture}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.2}{Network Training}{section.3}% 7
+\BOOKMARK [1][-]{section.4}{Results: The information content of photometric images}{}% 8
+\BOOKMARK [2][-]{subsection.4.1}{Galaxy population properties}{section.4}% 9
+\BOOKMARK [2][-]{subsection.4.2}{Individual galaxy properties}{section.4}% 10
+\BOOKMARK [2][-]{subsection.4.3}{Testing for systematics with galaxy radius}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.4}{Evaluating the ML prediction as a function of available wavelength bands}{section.4}% 12
+\BOOKMARK [2][-]{subsection.4.5}{Evaluating the ML prediction as a function of image size}{section.4}% 13
+\BOOKMARK [2][-]{subsection.4.6}{Evaluating the ML prediction as a function of training sample size}{section.4}% 14
+\BOOKMARK [1][-]{section.5}{Discussion: Application to observations}{}% 15
+\BOOKMARK [1][-]{section.6}{Summary \046 Conclusion}{}% 16
+\BOOKMARK [1][-]{section.A1}{Reconstruction with fewer wavelength bands}{}% 17
+\BOOKMARK [1][-]{section.A2}{Reconstruction with lower image resolution}{}% 18

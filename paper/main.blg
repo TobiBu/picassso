@@ -1,0 +1,52 @@
+This is BibTeX, Version 0.99d (TeX Live 2015)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: main.aux
+The style file: mnras.bst
+Database file #1: astro-ph.bib.bib
+Warning--entry type for "Bradley2020" isn't style-file defined
+--line 247 of file astro-ph.bib.bib
+Reallocated str_pool (elt_size=1) to 130000 items from 65000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+You've used 101 entries,
+            2881 wiz_defined-function locations,
+            1581 strings with 78510 characters,
+and the built_in function-call counts, 54297 in all, are:
+= -- 4883
+> -- 3548
+< -- 194
++ -- 1523
+- -- 546
+* -- 6351
+:= -- 7896
+add.period$ -- 0
+call.type$ -- 101
+change.case$ -- 202
+chr.to.int$ -- 101
+cite$ -- 101
+duplicate$ -- 2769
+empty$ -- 2620
+format.name$ -- 864
+if$ -- 10035
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 99
+newline$ -- 317
+num.names$ -- 666
+pop$ -- 532
+preamble$ -- 1
+purify$ -- 404
+quote$ -- 0
+skip$ -- 2023
+stack$ -- 0
+substring$ -- 3717
+swap$ -- 1702
+text.length$ -- 424
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 909
+warning$ -- 0
+while$ -- 742
+width$ -- 0
+write$ -- 1026
+(There was 1 warning)
